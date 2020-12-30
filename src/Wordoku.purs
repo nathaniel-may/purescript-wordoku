@@ -111,10 +111,11 @@ subGridsToRows = (=<<)
         three [x, y, z] = Tuple3 x y z
         three _         = Tuple3 [] [] []
 
+-- TODO this is where to add the word diagonal constraint
 pruneGrid' :: Grid -> Maybe Grid
-pruneGrid' grid = traverse pruneCells grid
-  >>= map transpose <<< traverse pruneCells <<< transpose
-  >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
+pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
+  >>= map transpose <<< traverse pruneCells <<< transpose -- make columns into rows, prune and replace
+  >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows -- make subgrids rows, prune and replace
 
 pruneGrid :: Grid -> Maybe Grid
 pruneGrid = fixM pruneGrid' where 
