@@ -115,3 +115,7 @@ pruneGrid' :: Grid -> Maybe Grid
 pruneGrid' grid = traverse pruneCells grid
   >>= map transpose <<< traverse pruneCells <<< transpose
   >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
+
+pruneGrid :: Grid -> Maybe Grid
+pruneGrid = fixM pruneGrid' where 
+    fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
