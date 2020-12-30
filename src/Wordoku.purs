@@ -5,6 +5,7 @@ import Data.Char.Unicode (digitToInt)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set)
 import Data.Set as Set
+import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (traverse)
@@ -15,9 +16,15 @@ exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1.
 
 data Cell = Fixed Int | Possible (Set Int)
 derive instance cellEq :: Eq Cell
+instance cellShow :: Show Cell where
+  show (Fixed i) = show i
+  show (Possible set) = "."
 
 type Row = Array Cell
 type Grid = Array Row
+
+showGrid :: ∀ a. Show a => Array (Array a) -> String
+showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
 
 allSet :: Set Int
 allSet = Set.fromFoldable (1..9)
