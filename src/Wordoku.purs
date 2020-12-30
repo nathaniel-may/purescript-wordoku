@@ -2,8 +2,7 @@ module Wordoku where
 
 import Prelude
 
-import Control.Apply (lift3)
-import Data.Array (concatMap, cons, drop, foldl, null, take, uncons, (:), (..))
+import Data.Array (cons, drop, elem, foldl, null, take, uncons, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Maybe (Maybe(..))
@@ -54,6 +53,15 @@ readGrid s =
     then Nothing
     else traverse (traverse readCell) (chunksOf 9 $ toCharArray s)
 
+showGridWithPossibilities :: Grid -> String
+showGridWithPossibilities = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)
+  where
+    showCell (Fixed x)     = show x <> "          "
+    showCell (Possible xs) =
+      (\x -> x <> "]")
+      <<< foldl (\acc x -> acc <> if x `elem` xs then show x else " ") "["
+      $ (1..9)
+
 ----- solver fns -----
 
 extractOne :: ∀ a. Set a -> Maybe a
@@ -102,3 +110,8 @@ subGridsToRows = (=<<)
     where
         three [x, y, z] = Tuple3 x y z
         three _         = Tuple3 [] [] []
+
+pruneGrid' :: Grid -> Maybe Grid
+pruneGrid' grid = traverse pruneCells grid
+  >>= map transpose <<< traverse pruneCells <<< transpose
+  >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
