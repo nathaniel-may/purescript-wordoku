@@ -2,7 +2,8 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (cons, drop, foldl, null, take, (..))
+import Control.Apply (lift3)
+import Data.Array (concatMap, cons, drop, foldl, null, take, uncons, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Maybe (Maybe(..))
@@ -15,6 +16,9 @@ import Data.Traversable (traverse)
 
 exPuzzle :: String
 exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
+
+exSolution :: String
+exSolution = "693784512487512936125963874932651487568247391741398625319475268856129743274836159"
 
 data Cell = Fixed Int | Possible (Set Int)
 derive instance cellEq :: Eq Cell
@@ -72,3 +76,29 @@ pruneCells cells = traverse pruneCell cells
         [y] -> Just $ Fixed y
         ys  -> Just (Possible $ Set.fromFoldable ys)
     pruneCell x = Just x
+
+transpose :: ∀ a. Array (Array a) -> Array (Array a)
+transpose l = case uncons l of
+  Nothing -> []
+  Just { head: l', tail: xss } -> case uncons l' of
+    Nothing -> transpose xss
+    Just { head: x, tail: xs } ->
+      (x `cons` Array.mapMaybe Array.head xss)
+        `cons`
+      transpose (xs `cons` Array.mapMaybe Array.tail xss)
+
+data Tuple3 a b c = Tuple3 a b c
+
+zip3 :: ∀ a b c d. (a -> b -> c -> d) -> Array a -> Array b -> Array c -> Array d
+zip3 f as bs cs = case Tuple3 (uncons as) (uncons bs) (uncons cs) of
+    Tuple3 (Just { head: a, tail: ast }) (Just { head: b, tail: bst }) (Just { head: c, tail: cst }) ->
+        (f a b c) : (zip3 f ast bst cst)
+    _ -> []
+
+subGridsToRows :: Grid -> Grid
+subGridsToRows = (=<<) 
+    (\rows -> let Tuple3 r0 r1 r2 = three $ map (chunksOf 3) rows
+              in zip3 (\a b c -> a <> b <> c) r0 r1 r2) <<< chunksOf 3
+    where
+        three [x, y, z] = Tuple3 x y z
+        three _         = Tuple3 [] [] []
