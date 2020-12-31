@@ -2,7 +2,7 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (concat, cons, delete, drop, elem, filter, foldl, index, insertAt, null, take, uncons, zip, (:), (..))
+import Data.Array (concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Int (quot)
@@ -15,6 +15,9 @@ import Data.Tuple (Tuple(..), snd)
 
 exPuzzle :: String
 exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
+
+exPuzzle2 :: String
+exPuzzle2 = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
 
 exSolution :: String
 exSolution = "693784512487512936125963874932651487568247391741398625319475268856129743274836159"
@@ -150,7 +153,10 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
         fixCell _ = Nothing
 
         replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
-        replaceAt idx f xs = fromMaybe xs $ (\x -> insertAt idx (f x) xs) =<< index xs idx
+        replaceAt idx f xs = fromMaybe xs $ do
+            x <- index xs idx
+            xs <- deleteAt idx xs
+            insertAt idx (f x) xs
 
         replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
         replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
