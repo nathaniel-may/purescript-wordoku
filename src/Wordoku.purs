@@ -7,6 +7,7 @@ import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Int (quot)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.NonEmpty (foldl1, (:|))
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String (joinWith)
@@ -124,22 +125,26 @@ pruneGrid = fixM pruneGrid' where
 unconsSet :: ∀ a. Ord a => Set a -> Maybe { head :: a, tail :: Set a }
 unconsSet set = map (\ht -> { head: ht.head, tail: Set.fromFoldable (ht.tail) }) (uncons (Set.toUnfoldable set))
 
-minimumBy :: ∀ a. (a -> a -> Ordering) -> a -> Array a -> a
-minimumBy f = foldl (minBy f) where
-    minBy f' x y = case f' x y of 
-        GT -> y
-        EQ -> x
-        LT -> x
+minimumBy :: ∀ a. Partial => (a -> a -> Ordering) -> Array a -> a
+minimumBy f arr = case uncons arr of
+    Nothing -> crashWith "Impossible case"
+    Just { head: z, tail: zs } -> foldl1 (minBy f) (z :| zs) 
+        where 
+            minBy f' x y = case f' x y of 
+                GT -> y
+                EQ -> x
+                LT -> x
 
 on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
 on g f = \x y -> g (f x) (f y)
 
 -- TODO let's get rid of this partial constraint
+-- TODO this compiles but I haven't checked for correctness in the repl
 nextGrids :: Partial => Grid -> Tuple Grid Grid
 nextGrids grid =
   let (Tuple3 i first@(Fixed _) rest) =
         fixCell
-        <<< minimumBy (compare `on` (possibilityCount <<< snd)) (Tuple 0 (Fixed 0)) --TODO this default is awkward
+        <<< minimumBy (compare `on` (possibilityCount <<< snd))
         <<< filter (isPossible <<< snd)
         <<< zip (0..81)
         <<< concat
