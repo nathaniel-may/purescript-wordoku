@@ -2,16 +2,19 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (cons, drop, elem, foldl, null, take, uncons, (:), (..))
+import Data.Array (concat, cons, delete, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
-import Data.Maybe (Maybe(..))
+import Data.Int (quot)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (traverse)
+import Data.Tuple (Tuple(..), snd)
+import Partial (crashWith)
 
 exPuzzle :: String
 exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
@@ -19,7 +22,7 @@ exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1.
 exSolution :: String
 exSolution = "693784512487512936125963874932651487568247391741398625319475268856129743274836159"
 
-data Cell = Fixed Int | Possible (Set Int)
+data Cell = Fixed Int | Possible (Array Int)
 derive instance cellEq :: Eq Cell
 instance cellShow :: Show Cell where
   show (Fixed i) = show i
@@ -31,14 +34,11 @@ type Grid = Array Row
 showGrid :: ∀ a. Show a => Array (Array a) -> String
 showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
 
-allSet :: Set Int
-allSet = Set.fromFoldable (1..9)
-
 allBut :: Int -> Cell
-allBut n = Possible $ Set.delete n allSet
+allBut n = Possible $ delete n (1..9)
 
 readCell :: Char -> Maybe Cell
-readCell '.' = Just $ Possible allSet
+readCell '.' = Just $ Possible (1..9)
 readCell str = (\x -> if x >= 1 && x <= 9 then Just (Fixed x) else Nothing) =<< digitToInt str
 
 chunksOf :: ∀ a. Int -> Array a -> Array (Array a)
@@ -64,9 +64,6 @@ showGridWithPossibilities = (joinWith "\n") <<< map ((joinWith " ") <<< map show
 
 ----- solver fns -----
 
-extractOne :: ∀ a. Set a -> Maybe a
-extractOne set = foldl (\_ a -> Just a) Nothing set
-
 -- TODO check usage of set vs array here
 pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = traverse pruneCell cells
@@ -82,7 +79,7 @@ pruneCells cells = traverse pruneCell cells
     pruneCell (Possible xs) = case (diff $ Array.fromFoldable xs) of
         []  -> Nothing
         [y] -> Just $ Fixed y
-        ys  -> Just (Possible $ Set.fromFoldable ys)
+        ys  -> Just (Possible ys)
     pruneCell x = Just x
 
 transpose :: ∀ a. Array (Array a) -> Array (Array a)
@@ -120,3 +117,51 @@ pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
 pruneGrid :: Grid -> Maybe Grid
 pruneGrid = fixM pruneGrid' where 
     fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
+
+------ backtracking fns ------
+
+-- TODO inefficient
+unconsSet :: ∀ a. Ord a => Set a -> Maybe { head :: a, tail :: Set a }
+unconsSet set = map (\ht -> { head: ht.head, tail: Set.fromFoldable (ht.tail) }) (uncons (Set.toUnfoldable set))
+
+minimumBy :: ∀ a. (a -> a -> Ordering) -> a -> Array a -> a
+minimumBy f = foldl (minBy f) where
+    minBy f' x y = case f' x y of 
+        GT -> y
+        EQ -> x
+        LT -> x
+
+on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
+on g f = \x y -> g (f x) (f y)
+
+-- TODO let's get rid of this partial constraint
+nextGrids :: Partial => Grid -> Tuple Grid Grid
+nextGrids grid =
+  let (Tuple3 i first@(Fixed _) rest) =
+        fixCell
+        <<< minimumBy (compare `on` (possibilityCount <<< snd)) (Tuple 0 (Fixed 0)) --TODO this default is awkward
+        <<< filter (isPossible <<< snd)
+        <<< zip (0..81)
+        <<< concat
+        $ grid
+  in Tuple (replace2D i first grid) (replace2D i rest grid)
+  where
+    isPossible :: Cell -> Boolean
+    isPossible (Possible _) = true
+    isPossible _            = false
+
+    possibilityCount (Possible xs) = length xs
+    possibilityCount (Fixed _)     = 1
+
+    fixCell (Tuple i (Possible [x, y])) = Tuple3 i (Fixed x) (Fixed y)
+    fixCell (Tuple i (Possible xs)) = case (uncons xs) of 
+        Just { head: y, tail: ys } -> Tuple3 i (Fixed y) (Possible ys)
+        _ -> crashWith "Impossible case" -- TODO stupid pattern.
+    fixCell _ = crashWith "Impossible case" -- TODO stupid pattern.
+
+    replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
+    replace2D i v = 
+        let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) in replaceAt x (replaceAt y (const v))
+
+    replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
+    replaceAt idx f xs = fromMaybe xs $ (\x -> insertAt idx (f x) xs) =<< index xs idx
