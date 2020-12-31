@@ -2,7 +2,7 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
+import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Int (quot)
@@ -30,6 +30,14 @@ instance cellShow :: Show Cell where
 
 type Row = Array Cell
 type Grid = Array Row
+
+isPossible :: Cell -> Boolean
+isPossible (Possible _) = true
+isPossible _            = false
+
+isFixed :: Cell -> Boolean
+isFixed (Fixed _) = true
+isFixed _         = false
 
 showGrid :: ∀ a. Show a => Array (Array a) -> String
 showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
@@ -141,10 +149,6 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
     pure $ Tuple (replace2D i first grid) (replace2D i rest grid)
 
     where
-        isPossible :: Cell -> Boolean
-        isPossible (Possible _) = true
-        isPossible _            = false
-
         possibilities :: Array (Tuple Int Cell)
         possibilities = filter (isPossible <<< snd)
             <<< zip (0..81)
@@ -166,16 +170,8 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
         replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
             in replaceAt x (replaceAt y (const v))
 
-any :: ∀ a. (a -> Boolean) -> Array a -> Boolean
-any f xs = fromMaybe false $ (\xs -> if f xs.head then true else any f xs.tail) <$> (uncons xs)
-
-all :: ∀ a. (a -> Boolean) -> Array a -> Boolean
-all f xs = not $ any (\x -> not $ f x) xs where
-    not true = false
-    not false = true
-
 isGridFilled :: Grid -> Boolean
-isGridFilled grid = null $ filter (\cell -> choices cell /= 0) (concat grid)
+isGridFilled grid = all isFixed (concat grid)
 
 -- isGridInvalid :: Grid -> Bool
 -- isGridInvalid grid =
