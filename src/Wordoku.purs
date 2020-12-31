@@ -2,20 +2,16 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (concat, cons, delete, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
+import Data.Array (concat, cons, delete, drop, elem, filter, foldl, index, insertAt, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Int (quot)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.NonEmpty (foldl1, (:|))
-import Data.Set (Set)
-import Data.Set as Set
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Partial (crashWith)
 
 exPuzzle :: String
 exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
@@ -121,52 +117,43 @@ pruneGrid = fixM pruneGrid' where
 
 ------ backtracking fns ------
 
--- TODO inefficient
-unconsSet :: ∀ a. Ord a => Set a -> Maybe { head :: a, tail :: Set a }
-unconsSet set = map (\ht -> { head: ht.head, tail: Set.fromFoldable (ht.tail) }) (uncons (Set.toUnfoldable set))
-
-minimumBy :: ∀ a. Partial => (a -> a -> Ordering) -> Array a -> a
-minimumBy f arr = case uncons arr of
-    Nothing -> crashWith "Impossible case"
-    Just { head: z, tail: zs } -> foldl1 (minBy f) (z :| zs) 
-        where 
-            minBy f' x y = case f' x y of 
-                GT -> y
-                EQ -> x
-                LT -> x
-
 on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
 on g f = \x y -> g (f x) (f y)
 
--- TODO let's get rid of this partial constraint
--- TODO this compiles but I haven't checked for correctness in the repl
-nextGrids :: Partial => Grid -> Tuple Grid Grid
-nextGrids grid =
-  let (Tuple3 i first@(Fixed _) rest) =
-        fixCell
-        <<< minimumBy (compare `on` (possibilityCount <<< snd))
-        <<< filter (isPossible <<< snd)
-        <<< zip (0..81)
-        <<< concat
-        $ grid
-  in Tuple (replace2D i first grid) (replace2D i rest grid)
-  where
-    isPossible :: Cell -> Boolean
-    isPossible (Possible _) = true
-    isPossible _            = false
+minimumBy :: ∀ a. (a -> a -> Ordering) -> Array a -> Maybe a
+minimumBy f arr = (\z -> foldl (flip $ minBy f) z.head z.tail) <$> uncons arr where 
+    minBy f' x y = case f' x y of 
+        GT -> y
+        EQ -> x
+        LT -> x
 
-    possibilityCount (Possible xs) = length xs
-    possibilityCount (Fixed _)     = 1
+nextGrids ::Grid -> Tuple Grid Grid
+nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. Consider putting maybe in the return type
+    min <- minimumBy (compare `on` (isPossible <<< snd)) choices
+    (Tuple3 i first rest) <- fixCell min
+    pure $ Tuple (replace2D i first grid) (replace2D i rest grid)
 
-    fixCell (Tuple i (Possible [x, y])) = Tuple3 i (Fixed x) (Fixed y)
-    fixCell (Tuple i (Possible xs)) = case (uncons xs) of 
-        Just { head: y, tail: ys } -> Tuple3 i (Fixed y) (Possible ys)
-        _ -> crashWith "Impossible case" -- TODO stupid pattern.
-    fixCell _ = crashWith "Impossible case" -- TODO stupid pattern.
+    where
+        isPossible :: Cell -> Boolean
+        isPossible (Possible _) = true
+        isPossible _            = false
 
-    replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
-    replace2D i v = 
-        let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) in replaceAt x (replaceAt y (const v))
+        choices :: Array (Tuple Int Cell)
+        choices = filter (isPossible <<< snd)
+            <<< zip (0..81)
+            <<< concat
+            $ grid
 
-    replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
-    replaceAt idx f xs = fromMaybe xs $ (\x -> insertAt idx (f x) xs) =<< index xs idx
+        fixCell :: Tuple Int Cell -> Maybe (Tuple3 Int Cell Cell)
+        fixCell (Tuple i (Possible [x, y])) = Just $ Tuple3 i (Fixed x) (Fixed y)
+        fixCell (Tuple i (Possible xs)) = (\x -> Tuple3 i (Fixed x.head) (Possible x.tail)) <$> uncons xs
+        fixCell _ = Nothing
+
+        replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
+        replaceAt idx f xs = fromMaybe xs $ (\x -> insertAt idx (f x) xs) =<< index xs idx
+
+        replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
+        replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
+            in replaceAt x (replaceAt y (const v))
+        
+        
