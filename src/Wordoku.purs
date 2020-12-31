@@ -2,7 +2,7 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, null, take, uncons, zip, (:), (..))
+import Data.Array (concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
 import Data.Int (quot)
@@ -124,15 +124,15 @@ on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
 on g f = \x y -> g (f x) (f y)
 
 minimumBy :: ∀ a. (a -> a -> Ordering) -> Array a -> Maybe a
-minimumBy f arr = (\z -> foldl (flip $ minBy f) z.head z.tail) <$> uncons arr where 
-    minBy f' x y = case f' x y of 
+minimumBy f arr = (\z -> foldl (minBy f) z.head z.tail) <$> uncons arr where 
+    minBy f' x y = case f' x y of -- keeps the first one if equal
         GT -> y
         EQ -> x
         LT -> x
 
-nextGrids ::Grid -> Tuple Grid Grid
+nextGrids :: Grid -> Tuple Grid Grid
 nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. Consider putting maybe in the return type
-    min <- minimumBy (compare `on` (isPossible <<< snd)) choices
+    min <- minimumBy (compare `on` (choices <<< snd)) possibilities
     (Tuple3 i first rest) <- fixCell min
     pure $ Tuple (replace2D i first grid) (replace2D i rest grid)
 
@@ -141,11 +141,15 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
         isPossible (Possible _) = true
         isPossible _            = false
 
-        choices :: Array (Tuple Int Cell)
-        choices = filter (isPossible <<< snd)
+        possibilities :: Array (Tuple Int Cell)
+        possibilities = filter (isPossible <<< snd)
             <<< zip (0..81)
             <<< concat
             $ grid
+
+        choices :: Cell -> Int
+        choices (Fixed _) = 0
+        choices (Possible xs) = length xs
 
         fixCell :: Tuple Int Cell -> Maybe (Tuple3 Int Cell Cell)
         fixCell (Tuple i (Possible [x, y])) = Just $ Tuple3 i (Fixed x) (Fixed y)
