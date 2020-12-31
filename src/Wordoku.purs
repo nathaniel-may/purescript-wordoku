@@ -2,6 +2,7 @@ module Wordoku where
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
@@ -194,3 +195,22 @@ isGridInvalid grid = any isInvalidRow grid
     hasDups' :: ∀ a. Eq a => Array a -> Array a -> Boolean
     hasDups' arr seen = fromMaybe false $ f <$> uncons arr where
         f x = if x.head `elem` seen then true else hasDups' x.tail (x.head : seen)
+
+solve :: Grid -> Maybe Grid
+solve grid = solve' =<< pruneGrid grid where
+    solve' g
+      | isGridInvalid g = Nothing
+      | isGridFilled g  = Just g
+      | otherwise       =
+          let (Tuple grid1 grid2) = nextGrids g
+          in solve grid1 <|> solve grid2
+
+solveAll :: Grid -> Array Grid
+solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid where
+    solveAll' :: Grid -> Array Grid
+    solveAll' g
+      | isGridInvalid g = []
+      | isGridFilled g  = [g]
+      | otherwise       =
+          let (Tuple grid1 grid2) = nextGrids g
+          in solveAll grid1 <> solveAll grid2
