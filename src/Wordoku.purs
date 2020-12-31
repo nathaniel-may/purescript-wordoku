@@ -120,6 +120,10 @@ pruneGrid = fixM pruneGrid' where
 
 ------ backtracking fns ------
 
+choices :: Cell -> Int
+choices (Fixed _) = 0
+choices (Possible xs) = length xs
+
 on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
 on g f = \x y -> g (f x) (f y)
 
@@ -147,10 +151,6 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
             <<< concat
             $ grid
 
-        choices :: Cell -> Int
-        choices (Fixed _) = 0
-        choices (Possible xs) = length xs
-
         fixCell :: Tuple Int Cell -> Maybe (Tuple3 Int Cell Cell)
         fixCell (Tuple i (Possible [x, y])) = Just $ Tuple3 i (Fixed x) (Fixed y)
         fixCell (Tuple i (Possible xs)) = (\x -> Tuple3 i (Fixed x.head) (Possible x.tail)) <$> uncons xs
@@ -165,5 +165,32 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
         replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
         replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
             in replaceAt x (replaceAt y (const v))
-        
-        
+
+any :: ∀ a. (a -> Boolean) -> Array a -> Boolean
+any f xs = fromMaybe false $ (\xs -> if f xs.head then true else any f xs.tail) <$> (uncons xs)
+
+all :: ∀ a. (a -> Boolean) -> Array a -> Boolean
+all f xs = not $ any (\x -> not $ f x) xs where
+    not true = false
+    not false = true
+
+isGridFilled :: Grid -> Boolean
+isGridFilled grid = null $ filter (\cell -> choices cell /= 0) (concat grid)
+
+-- isGridInvalid :: Grid -> Bool
+-- isGridInvalid grid =
+--   any isInvalidRow grid
+--   || any isInvalidRow (Data.List.transpose grid)
+--   || any isInvalidRow (subGridsToRows grid)
+--   where
+--     isInvalidRow row =
+--       let fixeds         = [x | Fixed x <- row]
+--           emptyPossibles = [x | Possible x <- row, null x]
+--       in hasDups fixeds || not (null emptyPossibles)
+
+--     hasDups l = hasDups' l []
+
+--     hasDups' [] _ = False
+--     hasDups' (y:ys) xs
+--       | y `elem` xs = True
+--       | otherwise   = hasDups' ys (y:xs)
