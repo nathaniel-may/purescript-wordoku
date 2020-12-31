@@ -173,20 +173,24 @@ nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. 
 isGridFilled :: Grid -> Boolean
 isGridFilled grid = all isFixed (concat grid)
 
--- isGridInvalid :: Grid -> Bool
--- isGridInvalid grid =
---   any isInvalidRow grid
---   || any isInvalidRow (Data.List.transpose grid)
---   || any isInvalidRow (subGridsToRows grid)
---   where
---     isInvalidRow row =
---       let fixeds         = [x | Fixed x <- row]
---           emptyPossibles = [x | Possible x <- row, null x]
---       in hasDups fixeds || not (null emptyPossibles)
+isGridInvalid :: Grid -> Boolean
+isGridInvalid grid = any isInvalidRow grid
+  || any isInvalidRow (transpose grid)
+  || any isInvalidRow (subGridsToRows grid)
+  where
+    isInvalidRow :: Row -> Boolean
+    isInvalidRow row =
+        let fixeds = row >>= (\cell -> case cell of 
+                Fixed x -> [x]
+                _ -> [])
+            emptyPossibles = (flip any) row (\cell -> case cell of 
+                Possible [] -> true
+                _ -> false)
+      in emptyPossibles || hasDups fixeds
 
---     hasDups l = hasDups' l []
+    hasDups :: ∀ a. Eq a => Array a -> Boolean
+    hasDups l = hasDups' l []
 
---     hasDups' [] _ = False
---     hasDups' (y:ys) xs
---       | y `elem` xs = True
---       | otherwise   = hasDups' ys (y:xs)
+    hasDups' :: ∀ a. Eq a => Array a -> Array a -> Boolean
+    hasDups' arr seen = fromMaybe false $ f <$> uncons arr where
+        f x = if x.head `elem` seen then true else hasDups' x.tail (x.head : seen)
