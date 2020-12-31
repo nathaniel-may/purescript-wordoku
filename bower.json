@@ -13,7 +13,9 @@
     "purescript-ordered-collections": "^1.6.1",
     "purescript-lists": "^5.4.1",
     "purescript-unicode": "^4.0.1",
-    "purescript-strings": "^4.0.1"
+    "purescript-strings": "^4.0.1",
+    "purescript-tuples": "^5.1.0",
+    "purescript-foldable-traversable": "^4.1.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0"
