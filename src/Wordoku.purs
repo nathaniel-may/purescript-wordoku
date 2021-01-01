@@ -15,16 +15,18 @@ import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
 
-exPuzzle :: String
-exPuzzle = ".......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
+numberPuzzle :: String
+numberPuzzle = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
 
-exPuzzle2 :: String
-exPuzzle2 = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
+wordPuzzle :: String
+wordPuzzle = ".nt...ps..y..shni....c.nyo..............o...i.h.s.tc........i.n.......c.....nyops"
 
 exSolution :: String
 exSolution = "693784512487512936125963874932651487568247391741398625319475268856129743274836159"
 
 data CellSet = CellSet Char (Array Char)
+instance cellSetShow :: Show CellSet where
+    show (CellSet empty allValues) = "CellSet " <> show empty <> " " <> show allValues
 
 data Cell = Fixed Char | Possible (Array Char)
 derive instance cellEq :: Eq Cell
