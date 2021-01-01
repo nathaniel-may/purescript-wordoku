@@ -2,7 +2,6 @@ module Wordoku where
 
 import Prelude
 
-import Control.Alt ((<|>))
 import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
@@ -203,7 +202,9 @@ solve grid = solve' =<< pruneGrid grid where
       | isGridFilled g  = Just g
       | otherwise       =
           let (Tuple grid1 grid2) = nextGrids g
-          in solve grid1 <|> solve grid2
+          in case solve grid1 of
+            solution@(Just _) -> solution
+            _ -> solve grid2
 
 solveAll :: Grid -> Array Grid
 solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid where
