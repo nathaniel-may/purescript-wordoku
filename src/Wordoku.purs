@@ -5,9 +5,9 @@ import Prelude
 import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
-import Data.Either
+import Data.Either (Either(..))
 import Data.Int (quot)
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (toCharArray)
@@ -217,3 +217,35 @@ solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid whe
         concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) -> 
             solveAll grid1 <> solveAll grid2
         )
+
+-- | 
+solve2 :: Grid -> Either (Maybe Grid) (Tuple Grid Grid)
+solve2 grid = toSolution $ solve2' <$> pruneGrid grid where
+    solve2' :: Grid -> Tuple (Maybe Grid) (Maybe Grid)
+    solve2' g
+        | isGridInvalid g = Tuple Nothing Nothing
+        | isGridFilled g  = Tuple (Just g) Nothing
+        | otherwise       = case nextGrids g of
+            Nothing -> Tuple Nothing Nothing
+            (Just (Tuple grid1 grid2)) -> case solve2' grid1 of
+                x@(Tuple (Just _) (Just _)) -> x
+                y -> y `fillWith` (solve2' grid2)
+
+    toSolution :: Maybe (Tuple (Maybe Grid) (Maybe Grid)) -> Either (Maybe Grid) (Tuple Grid Grid)
+    toSolution Nothing                          = Left Nothing
+    toSolution (Just (Tuple Nothing  Nothing))  = Left Nothing
+    toSolution (Just (Tuple (Just x) Nothing))  = Left (Just x)
+    toSolution (Just (Tuple Nothing  (Just y))) = Left (Just y)
+    toSolution (Just (Tuple (Just x) (Just y))) = Right (Tuple x y)
+    
+    fillWith :: Tuple (Maybe Grid) (Maybe Grid) -> Tuple (Maybe Grid) (Maybe Grid) -> Tuple (Maybe Grid) (Maybe Grid)
+    fillWith (Tuple Nothing Nothing) y = y
+    fillWith x (Tuple Nothing Nothing) = x
+    fillWith x@(Tuple (Just _) (Just _)) _ = x
+    fillWith _ y@(Tuple (Just _) (Just _)) = y
+    fillWith (Tuple (Just a) Nothing) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
+    fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
+    fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
+    fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
+    
+    
