@@ -218,9 +218,14 @@ solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid whe
             solveAll grid1 <> solveAll grid2
         )
 
--- | 
-solve2 :: Grid -> Either (Maybe Grid) (Tuple Grid Grid)
-solve2 grid = toSolution $ solve2' <$> pruneGrid grid where
+{- 
+Takes in a puzzle, determines if it has a solution, and if that solution is unique:
+- Nothing = puzzle has no solution
+- Just (Left x) = Grid x is the only unique solution
+- Just (Right (Tuple x y)) = x and y are both possible solutions so this puzzle does not have a unique solution
+-} 
+solve2 :: Grid -> Maybe (Either Grid (Tuple Grid Grid))
+solve2 grid = toSolution <<< solve2' =<< pruneGrid grid where
     solve2' :: Grid -> Tuple (Maybe Grid) (Maybe Grid)
     solve2' g
         | isGridInvalid g = Tuple Nothing Nothing
@@ -231,12 +236,11 @@ solve2 grid = toSolution $ solve2' <$> pruneGrid grid where
                 x@(Tuple (Just _) (Just _)) -> x
                 y -> y `fillWith` (solve2' grid2)
 
-    toSolution :: Maybe (Tuple (Maybe Grid) (Maybe Grid)) -> Either (Maybe Grid) (Tuple Grid Grid)
-    toSolution Nothing                          = Left Nothing
-    toSolution (Just (Tuple Nothing  Nothing))  = Left Nothing
-    toSolution (Just (Tuple (Just x) Nothing))  = Left (Just x)
-    toSolution (Just (Tuple Nothing  (Just y))) = Left (Just y)
-    toSolution (Just (Tuple (Just x) (Just y))) = Right (Tuple x y)
+    toSolution :: Tuple (Maybe Grid) (Maybe Grid) -> Maybe (Either Grid (Tuple Grid Grid))
+    toSolution (Tuple Nothing  Nothing)  = Nothing
+    toSolution (Tuple (Just x) Nothing)  = Just (Left x)
+    toSolution (Tuple Nothing  (Just y)) = Just (Left y)
+    toSolution (Tuple (Just x) (Just y)) = Just (Right (Tuple x y))
     
     fillWith :: Tuple (Maybe Grid) (Maybe Grid) -> Tuple (Maybe Grid) (Maybe Grid) -> Tuple (Maybe Grid) (Maybe Grid)
     fillWith (Tuple Nothing Nothing) y = y
