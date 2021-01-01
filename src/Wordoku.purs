@@ -2,15 +2,16 @@ module Wordoku where
 
 import Prelude
 
-import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
+import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
-import Data.Char.Unicode (digitToInt)
 import Data.Either (Either(..))
+import Data.Foldable (foldl)
 import Data.Int (quot)
+import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
-import Data.String.CodeUnits (toCharArray)
+import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
 
@@ -23,10 +24,12 @@ exPuzzle2 = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1
 exSolution :: String
 exSolution = "693784512487512936125963874932651487568247391741398625319475268856129743274836159"
 
-data Cell = Fixed Int | Possible (Array Int)
+data CellSet = CellSet Char (Array Char)
+
+data Cell = Fixed Char | Possible (Array Char)
 derive instance cellEq :: Eq Cell
 instance cellShow :: Show Cell where
-  show (Fixed i) = show i
+  show (Fixed i) = fromCharArray [i]
   show (Possible set) = "."
 
 type Row = Array Cell
@@ -43,12 +46,27 @@ isFixed _         = false
 showGrid :: ∀ a. Show a => Array (Array a) -> String
 showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
 
-allBut :: Int -> Cell
-allBut n = Possible $ delete n (1..9)
+allBut :: CellSet -> Char -> Cell
+allBut (CellSet _ allValues) v = Possible $ delete v allValues
 
-readCell :: Char -> Maybe Cell
-readCell '.' = Just $ Possible (1..9)
-readCell str = (\x -> if x >= 1 && x <= 9 then Just (Fixed x) else Nothing) =<< digitToInt str
+-- returns only the unique elements from the set
+unique :: ∀ a. Eq a => Ord a => Array a -> Array a
+unique xs = Array.fromFoldable <<< Map.keys $ foldl (\m x -> Map.insert x unit m) Map.empty xs
+
+mkCellSet :: Char -> Array Char -> Maybe CellSet
+mkCellSet empty allValues 
+    | length allValues /= 9 = Nothing
+    | empty `elem` allValues = Nothing
+    | unique allValues /= allValues = Nothing
+    | otherwise = Just (CellSet empty allValues)
+
+readCell :: CellSet -> Char -> Maybe Cell
+readCell (CellSet empty allValues) v = 
+    if v == empty 
+    then Just $ Possible allValues
+    else if v `elem` allValues 
+        then Just (Fixed v) 
+        else Nothing
 
 chunksOf :: ∀ a. Int -> Array a -> Array (Array a)
 chunksOf n xs =
@@ -56,20 +74,23 @@ chunksOf n xs =
     then pure xs
     else (take n xs) `cons` chunksOf n (drop n xs)
 
-readGrid :: String -> Maybe Grid
-readGrid s =
+readGrid :: CellSet -> String -> Maybe Grid
+readGrid cellSet s =
     if CodePoints.length s /= 81
     then Nothing
-    else traverse (traverse readCell) (chunksOf 9 $ toCharArray s)
+    else traverse (traverse $ readCell cellSet) (chunksOf 9 $ toCharArray s)
 
-showGridWithPossibilities :: Grid -> String
-showGridWithPossibilities = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)
+readNumberGrid :: String -> Maybe Grid
+readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< (mkCellSet '.' ['1','2','3','4','5','6','7','8','9'])
+
+showGridWithPossibilities :: CellSet -> Grid -> String
+showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)
   where
     showCell (Fixed x)     = show x <> "          "
     showCell (Possible xs) =
       (\x -> x <> "]")
       <<< foldl (\acc x -> acc <> if x `elem` xs then show x else " ") "["
-      $ (1..9)
+      $ allValues
 
 ----- solver fns -----
 
@@ -77,11 +98,11 @@ showGridWithPossibilities = (joinWith "\n") <<< map ((joinWith " ") <<< map show
 pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = traverse pruneCell cells
   where
-    fixed :: Cell -> Array Int
+    fixed :: Cell -> Array Char
     fixed (Fixed x) = [x]
     fixed _ = []
 
-    diff :: Array Int -> Array Int
+    diff :: Array Char -> Array Char
     diff xs = xs `Array.difference` (fixed =<< cells)
 
     pruneCell :: Cell -> Maybe Cell
@@ -125,6 +146,7 @@ pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
 
 pruneGrid :: Grid -> Maybe Grid
 pruneGrid = fixM pruneGrid' where 
+    fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
     fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
 
 ------ backtracking fns ------
@@ -243,7 +265,7 @@ solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
             Nothing -> Tuple Nothing Nothing
             (Just (Tuple grid1 grid2)) -> case solve2 grid1 of
                 x@(Tuple (Just _) (Just _)) -> x
-                y -> y `fillWith` (solve2' grid2)
+                y -> y `fillWith` (solve2 grid2)
 
     toSolution :: Tuple (Maybe Grid) (Maybe Grid) -> Maybe (Either Grid (Tuple Grid Grid))
     toSolution (Tuple Nothing  Nothing)  = Nothing
@@ -260,5 +282,8 @@ solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
     fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
-    
-    
+
+-- pruneCells :: ∀ a. Array (Array a) -> Array (Array a)
+-- pruneCells xs = xs where
+--     diff :: ∀ b. Array b -> Array b
+--     diff ys = ys `Array.difference` (identity =<< xs)
