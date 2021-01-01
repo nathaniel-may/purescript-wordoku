@@ -196,6 +196,9 @@ isGridInvalid grid = any isInvalidRow grid
     hasDups' arr seen = fromMaybe false $ f <$> uncons arr where
         f x = if x.head `elem` seen then true else hasDups' x.tail (x.head : seen)
 
+{- 
+Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
+-} 
 solve :: Grid -> Maybe Grid
 solve grid = solve' =<< pruneGrid grid where
     solve' g
@@ -207,6 +210,9 @@ solve grid = solve' =<< pruneGrid grid where
                 _ -> solve grid2
         )
 
+{- 
+Takes in a puzzle and finds all solutions.
+-} 
 solveAll :: Grid -> Array Grid
 solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid where
     solveAll' :: Grid -> Array Grid
@@ -222,17 +228,20 @@ solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid whe
 Takes in a puzzle, determines if it has a solution, and if that solution is unique:
 - Nothing = puzzle has no solution
 - Just (Left x) = Grid x is the only unique solution
-- Just (Right (Tuple x y)) = x and y are both possible solutions so this puzzle does not have a unique solution
+- Just (Right (Tuple x y)) = x and y are both valid solutions so this puzzle does not have a unique solution
+
+To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
+or exit early when it finds a second solution. For a fast single solution use `solve`.
 -} 
-solve2 :: Grid -> Maybe (Either Grid (Tuple Grid Grid))
-solve2 grid = toSolution <<< solve2' =<< pruneGrid grid where
-    solve2' :: Grid -> Tuple (Maybe Grid) (Maybe Grid)
-    solve2' g
+solveUnique :: Grid -> Maybe (Either Grid (Tuple Grid Grid))
+solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
+    solve2 :: Grid -> Tuple (Maybe Grid) (Maybe Grid)
+    solve2 g
         | isGridInvalid g = Tuple Nothing Nothing
         | isGridFilled g  = Tuple (Just g) Nothing
         | otherwise       = case nextGrids g of
             Nothing -> Tuple Nothing Nothing
-            (Just (Tuple grid1 grid2)) -> case solve2' grid1 of
+            (Just (Tuple grid1 grid2)) -> case solve2 grid1 of
                 x@(Tuple (Just _) (Just _)) -> x
                 y -> y `fillWith` (solve2' grid2)
 
