@@ -5,8 +5,9 @@ import Prelude
 import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, foldl, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Char.Unicode (digitToInt)
+import Data.Either
 import Data.Int (quot)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (toCharArray)
@@ -142,8 +143,8 @@ minimumBy f arr = (\z -> foldl (minBy f) z.head z.tail) <$> uncons arr where
         EQ -> x
         LT -> x
 
-nextGrids :: Grid -> Tuple Grid Grid
-nextGrids grid = fromMaybe (Tuple grid grid) $ do -- fromMaybe default is ugly. Consider putting maybe in the return type
+nextGrids :: Grid -> Maybe (Tuple Grid Grid)
+nextGrids grid = do
     min <- minimumBy (compare `on` (choices <<< snd)) possibilities
     (Tuple3 i first rest) <- fixCell min
     pure $ Tuple (replace2D i first grid) (replace2D i rest grid)
@@ -200,11 +201,11 @@ solve grid = solve' =<< pruneGrid grid where
     solve' g
       | isGridInvalid g = Nothing
       | isGridFilled g  = Just g
-      | otherwise       =
-          let (Tuple grid1 grid2) = nextGrids g
-          in case solve grid1 of
-            solution@(Just _) -> solution
-            _ -> solve grid2
+      | otherwise       = nextGrids g >>= (\(Tuple grid1 grid2) -> 
+            case solve grid1 of
+                solution@(Just _) -> solution
+                _ -> solve grid2
+        )
 
 solveAll :: Grid -> Array Grid
 solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid where
@@ -212,6 +213,7 @@ solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid whe
     solveAll' g
       | isGridInvalid g = []
       | isGridFilled g  = [g]
-      | otherwise       =
-          let (Tuple grid1 grid2) = nextGrids g
-          in solveAll grid1 <> solveAll grid2
+      | otherwise       = 
+        concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) -> 
+            solveAll grid1 <> solveAll grid2
+        )
