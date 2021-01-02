@@ -56,6 +56,9 @@ isFixed _         = false
 showGrid :: ∀ a. Show a => Array (Array a) -> String
 showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
 
+gridString :: Grid -> String
+gridString = joinWith "" <<< map (joinWith "" <<< map show)
+
 allBut :: CellSet -> Char -> Cell
 allBut (CellSet _ allValues) v = Possible $ delete v allValues
 
@@ -195,15 +198,15 @@ nextGrids grid = do
         fixCell (Tuple i (Possible xs)) = (\x -> Tuple3 i (Fixed x.head) (Possible x.tail)) <$> uncons xs
         fixCell _ = Nothing
 
-        replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
-        replaceAt idx f xs = fromMaybe xs $ do
-            x <- index xs idx
-            xs <- deleteAt idx xs
-            insertAt idx (f x) xs
+replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
+replaceAt idx f xs = fromMaybe xs $ do
+    x <- index xs idx
+    xs <- deleteAt idx xs
+    insertAt idx (f x) xs
 
-        replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
-        replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
-            in replaceAt x (replaceAt y (const v))
+replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
+replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
+    in replaceAt x (replaceAt y (const v))
 
 isGridFilled :: Grid -> Boolean
 isGridFilled grid = all isFixed (concat grid)
