@@ -1,3 +1,9 @@
+{-
+Translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-1/
+
+
+-}
+
 module Wordoku where
 
 import Prelude
@@ -6,7 +12,6 @@ import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter,
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl)
-import Data.Function (applyFlipped)
 import Data.Int (quot)
 import Data.List as List
 import Data.Map as Map
@@ -121,7 +126,7 @@ zip3 f as bs cs = case Tuple3 (uncons as) (uncons bs) (uncons cs) of
     _ -> []
 
 subGridsToRows :: Grid -> Grid
-subGridsToRows = (=<<) 
+subGridsToRows = (=<<)
     (\rows -> let Tuple3 r0 r1 r2 = three $ map (chunksOf 3) rows
               in zip3 (\a b c -> a <> b <> c) r0 r1 r2) <<< chunksOf 3
     where
