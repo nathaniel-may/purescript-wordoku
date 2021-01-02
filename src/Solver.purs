@@ -8,6 +8,8 @@ module Solver where
 
 import Prelude
 
+import Effect (Effect)
+import Effect.Random (randomInt)
 import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -19,8 +21,8 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (fromCharArray, toCharArray)
-import Data.Traversable (traverse)
-import Data.Tuple (Tuple(..), snd)
+import Data.Traversable (sequence, traverse)
+import Data.Tuple (Tuple(..), uncurry, snd)
 
 numberPuzzle :: String
 numberPuzzle = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
@@ -331,3 +333,13 @@ solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
     fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
+
+
+-- fisher yates
+randomArray :: ∀ a. Array a -> Effect (Array a)
+randomArray input = do 
+    k <- randomInt 0 (length input)
+    fromMaybe (pure []) do -- indicies will always match
+        v <- index input k
+        arr <- deleteAt k input
+        pure $ cons v <$> (randomArray arr)
