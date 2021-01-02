@@ -1,10 +1,10 @@
-module Interface where
+module Generator where
 
 import Prelude
 
 import Data.Maybe (Maybe)
 import Data.String.CodeUnits (toCharArray)
-import Wordoku (CellSet, mkCellSet)
+import Solver (CellSet, mkCellSet)
 
 data Values = Numbers | Word String | Colors
 derive instance valueEq :: Eq Values

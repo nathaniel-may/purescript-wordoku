@@ -4,7 +4,7 @@ Translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-1/
 
 -}
 
-module Wordoku where
+module Solver where
 
 import Prelude
 
