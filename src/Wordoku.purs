@@ -6,7 +6,9 @@ import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter,
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl)
+import Data.Function (applyFlipped)
 import Data.Int (quot)
+import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
@@ -139,6 +141,21 @@ subGridsToRows = (=<<)
     where
         three [x, y, z] = Tuple3 x y z
         three _         = Tuple3 [] [] []
+
+-- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
+exclusivePossibilities :: Row -> Array (Array Char)
+exclusivePossibilities = Array.fromFoldable <<< Map.values
+    <<< Map.filterWithKey (\is xs -> length is == length xs)
+    <<< foldl (\acc (Tuple k v) -> Map.insertWith (<>) v [k] acc) Map.empty
+    <<< (\m -> List.fromFoldable (Map.keys m) `List.zip` Map.values m)
+    <<< Map.filter ((\x -> x < 4) <<< length)
+    <<< foldl
+      (\acc tuple -> case tuple of
+        (Tuple i (Possible xs)) -> foldl (\acc' x -> Map.insertWith (<>) x [i] acc') acc xs
+        _ -> acc) -- won't get here since we previously filtered for `Possible` values
+      Map.empty
+    <<< filter (isPossible <<< snd)
+    <<< zip (1..9)
 
 -- TODO this is where to add the word diagonal constraint
 pruneGrid' :: Grid -> Maybe Grid
