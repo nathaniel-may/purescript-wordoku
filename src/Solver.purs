@@ -8,12 +8,10 @@ module Solver where
 
 import Prelude
 
-import Effect (Effect)
-import Effect.Random (randomInt)
 import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (foldl)
+import Data.Foldable (foldl, minimumBy)
 import Data.Int (quot)
 import Data.List as List
 import Data.Map as Map
@@ -21,8 +19,9 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (fromCharArray, toCharArray)
-import Data.Traversable (sequence, traverse)
-import Data.Tuple (Tuple(..), uncurry, snd)
+import Data.Traversable (traverse)
+import Data.Tuple (Tuple(..), snd)
+import Lib
 
 numberPuzzle :: String
 numberPuzzle = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
@@ -60,10 +59,6 @@ showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
 allBut :: CellSet -> Char -> Cell
 allBut (CellSet _ allValues) v = Possible $ delete v allValues
 
--- returns only the unique elements from the set
-unique :: ∀ a. Eq a => Ord a => Array a -> Array a
-unique xs = Array.fromFoldable <<< Map.keys $ foldl (\m x -> Map.insert x unit m) Map.empty xs
-
 mkCellSet :: Char -> Array Char -> Maybe CellSet
 mkCellSet empty allValues 
     | length allValues /= 9 = Nothing
@@ -78,12 +73,6 @@ readCell (CellSet empty allValues) v =
     else if v `elem` allValues 
         then Just (Fixed v) 
         else Nothing
-
-chunksOf :: ∀ a. Int -> Array a -> Array (Array a)
-chunksOf n xs =
-    if null (drop n xs)
-    then pure xs
-    else (take n xs) `cons` chunksOf n (drop n xs)
 
 readGrid :: CellSet -> String -> Maybe Grid
 readGrid cellSet s =
@@ -108,24 +97,6 @@ showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((join
 -- TODO check usage of set vs array here
 pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = fixM pruneCellsByExclusives =<< fixM pruneCellsByFixed cells
-
-transpose :: ∀ a. Array (Array a) -> Array (Array a)
-transpose l = case uncons l of
-  Nothing -> []
-  Just { head: l', tail: xss } -> case uncons l' of
-    Nothing -> transpose xss
-    Just { head: x, tail: xs } ->
-      (x `cons` Array.mapMaybe Array.head xss)
-        `cons`
-      transpose (xs `cons` Array.mapMaybe Array.tail xss)
-
-data Tuple3 a b c = Tuple3 a b c
-
-zip3 :: ∀ a b c d. (a -> b -> c -> d) -> Array a -> Array b -> Array c -> Array d
-zip3 f as bs cs = case Tuple3 (uncons as) (uncons bs) (uncons cs) of
-    Tuple3 (Just { head: a, tail: ast }) (Just { head: b, tail: bst }) (Just { head: c, tail: cst }) ->
-        (f a b c) : (zip3 f ast bst cst)
-    _ -> []
 
 subGridsToRows :: Grid -> Grid
 subGridsToRows = (=<<)
@@ -205,16 +176,6 @@ pruneGrid = fixM pruneGrid'
 choices :: Cell -> Int
 choices (Fixed _) = 0
 choices (Possible xs) = length xs
-
-on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
-on g f = \x y -> g (f x) (f y)
-
-minimumBy :: ∀ a. (a -> a -> Ordering) -> Array a -> Maybe a
-minimumBy f arr = (\z -> foldl (minBy f) z.head z.tail) <$> uncons arr where 
-    minBy f' x y = case f' x y of -- keeps the first one if equal
-        GT -> y
-        EQ -> x
-        LT -> x
 
 nextGrids :: Grid -> Maybe (Tuple Grid Grid)
 nextGrids grid = do
@@ -333,4 +294,3 @@ solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
     fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
-    
