@@ -333,13 +333,4 @@ solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
     fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
-
-
--- fisher yates
-randomArray :: ∀ a. Array a -> Effect (Array a)
-randomArray input = do 
-    k <- randomInt 0 (length input)
-    fromMaybe (pure []) do -- indicies will always match
-        v <- index input k
-        arr <- deleteAt k input
-        pure $ cons v <$> (randomArray arr)
+    
