@@ -8,7 +8,7 @@ module Solver where
 
 import Prelude
 
-import Data.Array (all, any, concat, cons, delete, deleteAt, drop, elem, filter, index, insertAt, length, null, take, uncons, zip, (:), (..))
+import Data.Array (all, any, concat, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Foldable (foldl, minimumBy)
@@ -21,7 +21,7 @@ import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Lib
+import Lib (Tuple3(..), chunksOf, on, transpose, unique, zip3)
 
 numberPuzzle :: String
 numberPuzzle = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
