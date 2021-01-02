@@ -1,10 +1,9 @@
 module Main where
 
-import Prelude (Unit)
+import Prelude
 import Effect (Effect)
 import Effect.Console (log)
--- import Wordoku
+import Generator (Values(..), Difficulty(..), generate)
 
 main :: Effect Unit
-main = do
-  log "wordoku coming soon"
+main = log =<< generate { restrictDiag: false, values: Numbers, difficulty: Difficult }

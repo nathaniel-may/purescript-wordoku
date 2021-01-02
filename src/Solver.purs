@@ -10,7 +10,7 @@ import Prelude
 
 import Data.Array (all, any, concat, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (:), (..))
 import Data.Array as Array
-import Data.Either (Either(..))
+import Data.Either (Either(..), hush)
 import Data.Foldable (foldl, minimumBy)
 import Data.Int (quot)
 import Data.List as List
@@ -62,12 +62,12 @@ gridString = joinWith "" <<< map (joinWith "" <<< map show)
 allBut :: CellSet -> Char -> Cell
 allBut (CellSet _ allValues) v = Possible $ delete v allValues
 
-mkCellSet :: Char -> Array Char -> Maybe CellSet
+mkCellSet :: Char -> Array Char -> Either String CellSet
 mkCellSet empty allValues 
-    | length allValues /= 9 = Nothing
-    | empty `elem` allValues = Nothing
-    | unique allValues /= allValues = Nothing
-    | otherwise = Just (CellSet empty allValues)
+    | length allValues /= 9 = Left "char set must have exactly 9 characters"
+    | empty `elem` allValues = Left "the empty character cannot also be in the list of values"
+    | length (unique allValues) /= length allValues = Left "all characters must be unique"
+    | otherwise = Right (CellSet empty allValues)
 
 readCell :: CellSet -> Char -> Maybe Cell
 readCell (CellSet empty allValues) v = 
@@ -84,7 +84,7 @@ readGrid cellSet s =
     else traverse (traverse $ readCell cellSet) (chunksOf 9 $ toCharArray s)
 
 readNumberGrid :: String -> Maybe Grid
-readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< (mkCellSet '.' ['1','2','3','4','5','6','7','8','9'])
+readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< (hush $ mkCellSet '.' ['1','2','3','4','5','6','7','8','9'])
 
 showGridWithPossibilities :: CellSet -> Grid -> String
 showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)
