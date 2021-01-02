@@ -174,6 +174,27 @@ pruneCellsByFixed cells = traverse pruneCell cells
     pruneCell (Possible xs) = makeCell (xs `Array.difference` fixeds)
     pruneCell x             = Just x
 
+pruneCellsByExclusives :: Array Cell -> Maybe (Array Cell)
+pruneCellsByExclusives cells = case exclusives of
+  [] -> Just cells
+  _  -> traverse pruneCell cells
+  where
+    exclusives :: Array (Array Char)
+    exclusives    = exclusivePossibilities cells
+
+    allExclusives :: Array Char
+    allExclusives = concat exclusives
+
+    pruneCell :: Cell -> Maybe Cell
+    pruneCell cell@(Fixed _) = Just cell
+    pruneCell cell@(Possible xs) = 
+        if intersection `elem` exclusives
+        then makeCell intersection
+        else Just cell 
+        where
+            intersection :: Array Char
+            intersection = xs `Array.intersect` allExclusives
+
 -- TODO this is where to add the word diagonal constraint
 pruneGrid' :: Grid -> Maybe Grid
 pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
