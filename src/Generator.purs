@@ -2,15 +2,13 @@ module Generator where
 
 import Prelude
 
-import Data.Array (cons, deleteAt, drop, filter, index, length, replicate, uncons, (..))
+import Data.Array (cons, deleteAt, index, length, replicate, uncons, (..))
 import Data.Either (Either(..), hush)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (CellSet(..), Cell(..), Grid, isPossible, mkCellSet, readGrid, replace2D, gridString, solve, solveUnique)
-
-import Debug.Trace (traceM)
+import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, replace2D, gridString, solve, solveUnique)
 
 type Opts = { 
       restrictDiag :: Boolean 
