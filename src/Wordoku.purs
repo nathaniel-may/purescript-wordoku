@@ -100,21 +100,7 @@ showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((join
 
 -- TODO check usage of set vs array here
 pruneCells :: Array Cell -> Maybe (Array Cell)
-pruneCells cells = traverse pruneCell cells
-  where
-    fixed :: Cell -> Array Char
-    fixed (Fixed x) = [x]
-    fixed _ = []
-
-    diff :: Array Char -> Array Char
-    diff xs = xs `Array.difference` (fixed =<< cells)
-
-    pruneCell :: Cell -> Maybe Cell
-    pruneCell (Possible xs) = case (diff $ Array.fromFoldable xs) of
-        []  -> Nothing
-        [y] -> Just $ Fixed y
-        ys  -> Just (Possible ys)
-    pruneCell x = Just x
+pruneCells cells = fixM pruneCellsByExclusives =<< fixM pruneCellsByFixed cells
 
 transpose :: ∀ a. Array (Array a) -> Array (Array a)
 transpose l = case uncons l of
@@ -201,10 +187,11 @@ pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
   >>= map transpose <<< traverse pruneCells <<< transpose -- make columns into rows, prune and replace
   >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows -- make subgrids rows, prune and replace
 
+fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
+fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
+
 pruneGrid :: Grid -> Maybe Grid
-pruneGrid = fixM pruneGrid' where 
-    fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
-    fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
+pruneGrid = fixM pruneGrid'
 
 ------ backtracking fns ------
 
@@ -339,8 +326,3 @@ solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
     fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
     fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
-
--- pruneCells :: ∀ a. Array (Array a) -> Array (Array a)
--- pruneCells xs = xs where
---     diff :: ∀ b. Array b -> Array b
---     diff ys = ys `Array.difference` (identity =<< xs)
