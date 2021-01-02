@@ -15,7 +15,8 @@
     "purescript-unicode": "^4.0.1",
     "purescript-strings": "^4.0.1",
     "purescript-tuples": "^5.1.0",
-    "purescript-foldable-traversable": "^4.1.1"
+    "purescript-foldable-traversable": "^4.1.1",
+    "purescript-random": "^4.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
