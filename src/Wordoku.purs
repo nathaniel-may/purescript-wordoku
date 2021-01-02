@@ -157,6 +157,23 @@ exclusivePossibilities = Array.fromFoldable <<< Map.values
     <<< filter (isPossible <<< snd)
     <<< zip (1..9)
 
+makeCell :: Array Char -> Maybe Cell
+makeCell []  = Nothing
+makeCell [y] = Just $ Fixed y
+makeCell ys  = Just $ Possible ys
+
+pruneCellsByFixed :: Array Cell -> Maybe (Array Cell)
+pruneCellsByFixed cells = traverse pruneCell cells
+  where
+    fixeds :: Array Char
+    fixeds = cells >>= (\cell -> case cell of 
+        Fixed x -> [x]
+        _ -> [])
+
+    pruneCell :: Cell -> Maybe Cell
+    pruneCell (Possible xs) = makeCell (xs `Array.difference` fixeds)
+    pruneCell x             = Just x
+
 -- TODO this is where to add the word diagonal constraint
 pruneGrid' :: Grid -> Maybe Grid
 pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
