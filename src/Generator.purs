@@ -9,13 +9,14 @@ import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Effect (Effect)
 import Effect.Random (randomInt)
 import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, replace2D, gridString, solve, solveUnique)
+import Wordlist (wordlist)
 
 type Opts = { 
       restrictDiag :: Boolean 
-    , values :: Values
-    , difficulty :: Difficulty }
+    , values       :: Values
+    , difficulty   :: Difficulty }
 
-data Values = Numbers | Word String | Colors
+data Values = Numbers | Word | Colors
 derive instance valueEq :: Eq Values
 
 data Difficulty = Beginner | Casual | Tricky | Difficult | Challenge | Inhuman
@@ -59,8 +60,13 @@ generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if 
 cellSet :: Values -> Effect (Either String CellSet)
 cellSet Numbers = mkCellSet '.' <$> randomArray ['1','2','3','4','5','6','7','8','9']
 cellSet Colors = mkCellSet '.' <$> randomArray ['R','O','Y','L','G','B','I','P','V']
-cellSet (Word word) = mkCellSet '.' <$> randomArray (toCharArray word)
-
+cellSet Word = mkCellSet '.' <$> ((randomArray <<< toCharArray) =<< (randomWord unit))
+    
+randomWord :: Unit -> Effect String
+randomWord _ = fromMaybe "" -- random access won't fail
+    <<< index wordlist 
+    <$> randomInt 0 (length wordlist - 1)
+    
 -- fisher yates
 randomArray :: ∀ a. Array a -> Effect (Array a)
 randomArray input = do
@@ -80,4 +86,3 @@ diffNum Inhuman   = 17
 
 emptySudoku :: String
 emptySudoku = fromCharArray $ replicate 81 '.'
-
