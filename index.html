@@ -8,9 +8,9 @@
 <body>
   <script src="./app.js"></script>
 
-  <form action="#" onsubmit="console.log('generated: ' + generate(fromForm(this)));">
+  <form name= "form" action="#" onsubmit="console.log('generated: ' + generate(fromForm(this)));">
     <p>Sudoku Type:</p>
-    <input type="radio" id="sudoku" name="sudoku-type" value="Numbers">
+    <input type="radio" id="sudoku" name="sudoku-type" value="Numbers" checked="checked">
     <label for="male">Sudoku</label><br>
     <input type="radio" id="wordoku" name="sudoku-type" value="Word">
     <label for="female">Wordoku</label><br>
@@ -22,7 +22,7 @@
     <p>Difficulty:</p>
     <input type="radio" id="Beginner" name="difficulty" value="Beginner">
     <label for="age1">Beginner</label><br>
-    <input type="radio" id="Casual" name="difficulty" value="Casual">
+    <input type="radio" id="Casual" name="difficulty" value="Casual" checked="checked">
     <label for="age2">Casual</label><br>  
     <input type="radio" id="Tricky" name="difficulty" value="Tricky">
     <label for="age3">Tricky</label><br>
