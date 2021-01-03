@@ -294,16 +294,20 @@ To determine uniqueness, it must attempt to visit every solution in the space an
 or exit early when it finds a second solution. For a fast single solution use `solve`.
 -} 
 solveUnique :: Boolean -> Grid -> Maybe (Either Grid (Tuple Grid Grid))
-solveUnique diag grid = toSolution <<< solve2 =<< (pruneGridWithDiagConstraint diag $ grid) where
-    solve2 :: Grid -> Tuple (Maybe Grid) (Maybe Grid)
-    solve2 g
-        | isGridInvalidWithDiagConstraint diag g = Tuple Nothing Nothing
+solveUnique diag grid = toSolution $ solveUnique' diag grid where
+    solveUnique' :: Boolean -> Grid -> Tuple (Maybe Grid) (Maybe Grid)
+    solveUnique' d g = fromMaybe (Tuple Nothing Nothing)
+        $ solve2 d <$> (pruneGridWithDiagConstraint d g)
+
+    solve2 :: Boolean -> Grid -> Tuple (Maybe Grid) (Maybe Grid)
+    solve2 d g
+        | isGridInvalidWithDiagConstraint d g = Tuple Nothing Nothing
         | isGridFilled g  = Tuple (Just g) Nothing
         | otherwise       = case nextGrids g of
             Nothing -> Tuple Nothing Nothing
-            (Just (Tuple grid1 grid2)) -> case solve2 grid1 of
+            (Just (Tuple grid1 grid2)) -> case solveUnique' d grid1 of
                 x@(Tuple (Just _) (Just _)) -> x
-                y -> y `fillWith` (solve2 grid2)
+                y -> y `fillWith` (solveUnique' d grid2)
 
     toSolution :: Tuple (Maybe Grid) (Maybe Grid) -> Maybe (Either Grid (Tuple Grid Grid))
     toSolution (Tuple Nothing  Nothing)  = Nothing
