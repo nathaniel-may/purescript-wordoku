@@ -22,15 +22,16 @@ main = HA.runHalogenAff do
 
 type State =
     { restrictDiag :: Boolean
-    , values :: Values
-    , difficulty :: Difficulty
-    , loading :: Boolean
-    , generated :: Maybe String 
+    , values       :: Values
+    , difficulty   :: Difficulty
+    , loading      :: Boolean
+    , generated    :: Maybe String 
     }
 
 data Action 
-    = Generate Event
-    | SetValues String
+    = Generate      Event
+    | SetValues     Values
+    | SetDifficulty Difficulty
 
 component =
   H.mkComponent
@@ -51,28 +52,74 @@ initialState _ =
 fromState :: State -> Opts
 fromState st = { restrictDiag: false, values: st.values, difficulty: st.difficulty }
 
-toValue :: String -> Values
-toValue "Numbers" = Numbers
-toValue "Colors" = Colors
-toValue _ = Numbers
+toDifficulty :: String -> Difficulty
+toDifficulty "Beginner"  = Beginner
+toDifficulty "Casual"    = Casual
+toDifficulty "Tricky"    = Tricky
+toDifficulty "Difficult" = Difficult
+toDifficulty "Challenge" = Challenge
+toDifficulty "Inhuman"   = Inhuman
+toDifficulty _           = Tricky
 
 render st =
     HH.div_
         [ HH.form 
             [ HE.onSubmit (Just <<< Generate) ]
-            [ HH.h1_ [ HH.text "Lookup GitHub user" ]
+            [ HH.h1_ [ HH.text "Sudoku Generator" ]
             , HH.label_
-                [ HH.div_ [ HH.text "Enter username:" ]
-                , HH.input
-                    [ HP.value "value"
-                    , HE.onValueInput (Just <<< SetValues)
+                [ HH.div_ [ HH.text "Type of Sudoku:" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just $ SetValues Numbers)
                     ]
+                    [ HH.text "Sudoku" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton 
+                    , HE.onClick (\_ -> Just $ SetValues Word)
+                    ]
+                    [ HH.text "Wordoku" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just $ SetValues Colors)
+                    ]
+                    [ HH.text "Colorku" ]
                 ]
-            , HH.button
-                [ HP.disabled st.loading
-                , HP.type_ HP.ButtonSubmit
+            , HH.label_
+                [ HH.div_ [ HH.text "Difficulty:" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just $ SetDifficulty Beginner)
+                    ]
+                    [ HH.text "Beginner" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton 
+                    , HE.onClick (\_ -> Just $ SetDifficulty Casual)
+                    ]
+                    [ HH.text "Casual" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just $ SetDifficulty Tricky)
+                    ]
+                    [ HH.text "Tricky" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just $ SetDifficulty Difficult)
+                    ]
+                    [ HH.text "Difficult" ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton 
+                    , HE.onClick (\_ -> Just $ SetDifficulty Challenge)
+                    ]
+                    [ HH.text "Challenge" ]
                 ]
-                [ HH.text "Fetch info" ]
+            , HH.label_ 
+                [ HH.div_ [ HH.text "" ]
+                , HH.button
+                    [ HP.disabled st.loading
+                    , HP.type_ HP.ButtonSubmit
+                    ]
+                    [ HH.text "Generate" ]
+            ]
             , HH.p_
                 [ HH.text (if st.loading then "Working..." else "") ]
             , HH.div_
@@ -90,7 +137,9 @@ render st =
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
     SetValues v -> do
-        H.modify_ (_ { values = toValue v, generated = Nothing :: Maybe String })
+        H.modify_ (_ { values = v })
+    SetDifficulty d -> do
+        H.modify_ (_ { difficulty = d })
     Generate event -> do
         H.liftEffect $ Event.preventDefault event
         st <- H.gets identity
