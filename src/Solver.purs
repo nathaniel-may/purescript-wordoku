@@ -12,7 +12,7 @@ import Data.Array (all, any, concat, delete, deleteAt, elem, filter, index, inse
 import Data.Array as Array
 import Data.Either (Either(..), hush)
 import Data.Foldable (foldl, minimumBy)
-import Data.Int (quot)
+import Data.Int (parity, quot)
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -109,11 +109,14 @@ subGridsToRows = (=<<)
         three [x, y, z] = Tuple3 x y z
         three _         = Tuple3 [] [] []
 
-diagonalOf :: Grid -> Tuple Row Grid
-diagonalOf grid = fromMaybe (Tuple [] []) 
-    $ (flip Tuple grid)
-    <$> (traverse (index2D grid) 
-    $ map ((*) 10) (0..8))
+diagIdxs :: Array Int
+diagIdxs = map ((*) 10) (0..8)
+
+diagonalOf :: Grid -> Row
+diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
+
+replaceDiagonal :: Row -> Grid -> Grid
+replaceDiagonal row grid = foldl (\grid' (Tuple cell i) -> replace2D i cell grid') grid (row `zip` diagIdxs)
 
 -- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
 exclusivePossibilities :: Row -> Array (Array Char)
@@ -173,6 +176,11 @@ pruneGrid' :: Grid -> Maybe Grid
 pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
   >>= map transpose <<< traverse pruneCells <<< transpose -- make columns into rows, prune and replace
   >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows -- make subgrids rows, prune and replace
+
+pruneGridWithDiagConstraint' :: Grid -> Maybe Grid
+pruneGridWithDiagConstraint' grid = pruneDiag =<< pruneGrid' grid where
+    pruneDiag :: Grid -> Maybe Grid
+    pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
 
 fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
 fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
