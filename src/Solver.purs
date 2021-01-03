@@ -185,8 +185,9 @@ pruneGridWithDiagConstraint' grid = pruneDiag =<< pruneGrid' grid where
 fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
 fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
 
-pruneGrid :: Grid -> Maybe Grid
-pruneGrid = fixM pruneGrid'
+pruneGridWithDiagConstraint :: Boolean -> Grid -> Maybe Grid
+pruneGridWithDiagConstraint true = fixM pruneGridWithDiagConstraint'
+pruneGridWithDiagConstraint false = fixM pruneGrid'
 
 ------ backtracking fns ------
 
@@ -229,20 +230,15 @@ index2D arr i = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9))
 isGridFilled :: Grid -> Boolean
 isGridFilled grid = all isFixed (concat grid)
 
-isGridInvalid :: Grid -> Boolean
-isGridInvalid grid = any isInvalidRow grid
-  || any isInvalidRow (transpose grid)
-  || any isInvalidRow (subGridsToRows grid)
-  where
-    isInvalidRow :: Row -> Boolean
-    isInvalidRow row =
-        let fixeds = row >>= (\cell -> case cell of 
-                Fixed x -> [x]
-                _ -> [])
-            emptyPossibles = (flip any) row (\cell -> case cell of 
-                Possible [] -> true
-                _ -> false)
-      in emptyPossibles || hasDups fixeds
+isInvalidRow :: Row -> Boolean
+isInvalidRow row =
+    let fixeds = row >>= (\cell -> case cell of 
+            Fixed x -> [x]
+            _ -> [])
+        emptyPossibles = (flip any) row (\cell -> case cell of 
+            Possible [] -> true
+            _ -> false)
+    in emptyPossibles || hasDups fixeds where
 
     hasDups :: ∀ a. Eq a => Array a -> Boolean
     hasDups l = hasDups' l []
@@ -251,32 +247,41 @@ isGridInvalid grid = any isInvalidRow grid
     hasDups' arr seen = fromMaybe false $ f <$> uncons arr where
         f x = if x.head `elem` seen then true else hasDups' x.tail (x.head : seen)
 
+isGridInvalid' :: Grid -> Boolean
+isGridInvalid' grid = any isInvalidRow grid
+  || any isInvalidRow (transpose grid)
+  || any isInvalidRow (subGridsToRows grid)
+
+isGridInvalidWithDiagConstraint :: Boolean -> Grid -> Boolean
+isGridInvalidWithDiagConstraint true grid = isInvalidRow (diagonalOf grid) || isGridInvalid' grid
+isGridInvalidWithDiagConstraint false grid = isGridInvalid' grid
+
 {- 
 Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
 -} 
-solve :: Grid -> Maybe Grid
-solve grid = solve' =<< pruneGrid grid where
+solve :: Boolean -> Grid -> Maybe Grid
+solve diag grid = solve' =<< (pruneGridWithDiagConstraint diag $ grid) where
     solve' g
-      | isGridInvalid g = Nothing
+      | isGridInvalidWithDiagConstraint diag g = Nothing
       | isGridFilled g  = Just g
       | otherwise       = nextGrids g >>= (\(Tuple grid1 grid2) -> 
-            case solve grid1 of
+            case solve diag grid1 of
                 solution@(Just _) -> solution
-                _ -> solve grid2
+                _ -> solve diag grid2
         )
 
 {- 
 Takes in a puzzle and finds all solutions.
 -} 
-solveAll :: Grid -> Array Grid
-solveAll grid = concat <<< Array.fromFoldable $ solveAll' <$> pruneGrid grid where
+solveAll :: Boolean -> Grid -> Array Grid
+solveAll diag grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGridWithDiagConstraint diag $ grid) where
     solveAll' :: Grid -> Array Grid
     solveAll' g
-      | isGridInvalid g = []
+      | isGridInvalidWithDiagConstraint diag g = []
       | isGridFilled g  = [g]
       | otherwise       = 
         concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) -> 
-            solveAll grid1 <> solveAll grid2
+            solveAll diag grid1 <> solveAll diag grid2
         )
 
 {- 
@@ -288,11 +293,11 @@ Takes in a puzzle, determines if it has a solution, and if that solution is uniq
 To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
 or exit early when it finds a second solution. For a fast single solution use `solve`.
 -} 
-solveUnique :: Grid -> Maybe (Either Grid (Tuple Grid Grid))
-solveUnique grid = toSolution <<< solve2 =<< pruneGrid grid where
+solveUnique :: Boolean -> Grid -> Maybe (Either Grid (Tuple Grid Grid))
+solveUnique diag grid = toSolution <<< solve2 =<< (pruneGridWithDiagConstraint diag $ grid) where
     solve2 :: Grid -> Tuple (Maybe Grid) (Maybe Grid)
     solve2 g
-        | isGridInvalid g = Tuple Nothing Nothing
+        | isGridInvalidWithDiagConstraint diag g = Tuple Nothing Nothing
         | isGridFilled g  = Tuple (Just g) Nothing
         | otherwise       = case nextGrids g of
             Nothing -> Tuple Nothing Nothing

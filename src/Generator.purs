@@ -21,11 +21,10 @@ derive instance valueEq :: Eq Values
 data Difficulty = Beginner | Casual | Tricky | Difficult | Challenge | Inhuman
 derive instance difficultyEq :: Eq Difficulty
 
--- TODO diagonal
 generate :: Opts -> Effect String
 generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
     mCellSet <- hush <$> cellSet opts.values
-    let mFilled = solve =<< ((\set -> readGrid set emptySudoku) =<< mCellSet)
+    let mFilled = solve opts.restrictDiag =<< ((\set -> readGrid set emptySudoku) =<< mCellSet)
     randIdxs <- randomArray (0..80)
     pure $ do 
         cs <- mCellSet
@@ -34,7 +33,7 @@ generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if 
     where
         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
         reduceBy cs count idxs grid = if count > 64 then Nothing else do
-            lr <- solveUnique grid
+            lr <- solveUnique opts.restrictDiag grid
             { head: idx, tail: rands } <- uncons idxs
             -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
             case lr of 
