@@ -109,6 +109,12 @@ subGridsToRows = (=<<)
         three [x, y, z] = Tuple3 x y z
         three _         = Tuple3 [] [] []
 
+diagonalOf :: Grid -> Tuple Row Grid
+diagonalOf grid = fromMaybe (Tuple [] []) 
+    $ (flip Tuple grid)
+    <$> (traverse (index2D grid) 
+    $ map ((*) 10) (0..8))
+
 -- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
 exclusivePossibilities :: Row -> Array (Array Char)
 exclusivePossibilities = Array.fromFoldable <<< Map.values
@@ -207,6 +213,10 @@ replaceAt idx f xs = fromMaybe xs $ do
 replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
 replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
     in replaceAt x (replaceAt y (const v))
+
+index2D :: ∀ a. Array (Array a) -> Int -> Maybe a
+index2D arr i = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
+    in (\arr' -> index arr' x) =<< (index arr y)
 
 isGridFilled :: Grid -> Boolean
 isGridFilled grid = all isFixed (concat grid)
