@@ -88,26 +88,31 @@ render st =
                 [ HH.div_ [ HH.text "Difficulty:" ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.name "Beginner"
                     , HE.onClick (\_ -> Just $ SetDifficulty Beginner)
                     ]
                     [ HH.text "Beginner" ]
                 , HH.button
-                    [ HP.type_ HP.ButtonButton 
+                    [ HP.type_ HP.ButtonButton
+                    , HP.name "Casual"
                     , HE.onClick (\_ -> Just $ SetDifficulty Casual)
                     ]
                     [ HH.text "Casual" ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.name "Tricky"
                     , HE.onClick (\_ -> Just $ SetDifficulty Tricky)
                     ]
                     [ HH.text "Tricky" ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.name "Difficult"
                     , HE.onClick (\_ -> Just $ SetDifficulty Difficult)
                     ]
                     [ HH.text "Difficult" ]
                 , HH.button
-                    [ HP.type_ HP.ButtonButton 
+                    [ HP.type_ HP.ButtonButton
+                    , HP.name "Challenge" 
                     , HE.onClick (\_ -> Just $ SetDifficulty Challenge)
                     ]
                     [ HH.text "Challenge" ]
@@ -118,10 +123,8 @@ render st =
                     [ HP.disabled st.loading
                     , HP.type_ HP.ButtonSubmit
                     ]
-                    [ HH.text "Generate" ]
-            ]
-            , HH.p_
-                [ HH.text (if st.loading then "Working..." else "") ]
+                    [ HH.text (if st.loading then "Working..." else "Generate") ]
+                ]
             , HH.div_
                 case st.generated of
                     Nothing -> []
