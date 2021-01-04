@@ -66,57 +66,21 @@ render st =
         [ HH.form 
             [ HE.onSubmit (Just <<< Generate) ]
             [ HH.h1_ [ HH.text "Sudoku Generator" ]
-            , HH.label_
-                [ HH.div_ [ HH.text "Type of Sudoku:" ]
-                , HH.button
+        , HH.div_
+            [ HH.div_
+                [ HH.button
                     [ HP.type_ HP.ButtonButton
-                    , HE.onClick (\_ -> Just $ SetValues Numbers)
+                    , HP.name "Beginner" -- TODO set this based on state
+                    , HE.onClick (\_ -> Just $ SetDifficulty Beginner) -- TODO make this cycle
                     ]
-                    [ HH.text "Sudoku" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton 
-                    , HE.onClick (\_ -> Just $ SetValues Word)
-                    ]
-                    [ HH.text "Wordoku" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton
-                    , HE.onClick (\_ -> Just $ SetValues Colors)
-                    ]
-                    [ HH.text "Colorku" ]
+                    [ HH.text "Beginner" ] -- TODO and this
                 ]
-            , HH.label_
-                [ HH.div_ [ HH.text "Difficulty:" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton
-                    , HP.name "Beginner"
-                    , HE.onClick (\_ -> Just $ SetDifficulty Beginner)
-                    ]
-                    [ HH.text "Beginner" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton
-                    , HP.name "Casual"
-                    , HE.onClick (\_ -> Just $ SetDifficulty Casual)
-                    ]
-                    [ HH.text "Casual" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton
-                    , HP.name "Tricky"
-                    , HE.onClick (\_ -> Just $ SetDifficulty Tricky)
-                    ]
-                    [ HH.text "Tricky" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton
-                    , HP.name "Difficult"
-                    , HE.onClick (\_ -> Just $ SetDifficulty Difficult)
-                    ]
-                    [ HH.text "Difficult" ]
-                , HH.button
-                    [ HP.type_ HP.ButtonButton
-                    , HP.name "Challenge" 
-                    , HE.onClick (\_ -> Just $ SetDifficulty Challenge)
-                    ]
-                    [ HH.text "Challenge" ]
+            , HH.button
+                [ HP.type_ HP.ButtonButton
+                , HE.onClick (\_ -> Just $ SetValues Numbers) -- TODO make this cycle through not set.
                 ]
+                [ HH.text "Sudoku" ] -- TODO set this based on state
+            ]
             , HH.label_ 
                 [ HH.div_ [ HH.text "" ]
                 , HH.button
