@@ -14,8 +14,6 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
-import Web.Event.Event (Event)
-import Web.Event.Event as Event
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -112,7 +110,7 @@ handleAction = case _ of
         H.liftEffect $ log "generating..."
         st <- H.gets identity
         H.modify_ (_ { loading = true })
-        sudoku <-  H.liftAff <<< H.liftEffect $ generate (fromState st)
+        sudoku <- H.liftAff <<< H.liftEffect $ generate (fromState st)
         H.liftEffect $ log "generated this game:"
         H.liftEffect $ log sudoku
         H.modify_ (_ { loading = false, generated = Just sudoku })
