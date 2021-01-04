@@ -15,23 +15,23 @@ import Wordlist (wordlist)
 
 type Opts = { 
       restrictDiag :: Boolean 
-    , values       :: Values
+    , values       :: Game
     , difficulty   :: Difficulty }
 
-data Values = Numbers | Word | Colors
-derive instance valuesEq :: Eq Values
-derive instance valuesOrd :: Ord Values
-instance valuesEnum :: Enum Values where
-    succ Numbers = Just Word
-    succ Word    = Just Colors
-    succ Colors  = Nothing
-    pred Numbers = Nothing
-    pred Word    = Just Numbers
-    pred Colors  = Just Word
-instance showValues :: Show Values where
-    show Numbers = "Numbers"
-    show Word    = "Word"
-    show Colors  = "Colors"
+data Game = Sudoku | Wordoku | Colorku
+derive instance valuesEq :: Eq Game
+derive instance valuesOrd :: Ord Game
+instance valuesEnum :: Enum Game where
+    succ Sudoku = Just Wordoku
+    succ Wordoku    = Just Colorku
+    succ Colorku  = Nothing
+    pred Sudoku = Nothing
+    pred Wordoku    = Just Sudoku
+    pred Colorku  = Just Wordoku
+instance showValues :: Show Game where
+    show Sudoku  = "Sudoku"
+    show Wordoku = "Wordoku"
+    show Colorku = "Colorku"
 
 data Difficulty = Beginner | Casual | Tricky | Difficult | Challenge
 derive instance difficultyEq :: Eq Difficulty
@@ -89,10 +89,10 @@ generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if 
         toStringOrLoop Nothing = generate opts
         toStringOrLoop (Just grid) = pure $ gridString grid
 
-cellSet :: Values -> Effect (Either String CellSet)
-cellSet Numbers = mkCellSet '.' <$> randomArray ['1','2','3','4','5','6','7','8','9']
-cellSet Colors = mkCellSet '.' <$> randomArray ['R','O','Y','L','G','B','I','P','V']
-cellSet Word = mkCellSet '.' <$> ((randomArray <<< toCharArray) =<< (randomWord unit))
+cellSet :: Game -> Effect (Either String CellSet)
+cellSet Sudoku = mkCellSet '.' <$> randomArray ['1','2','3','4','5','6','7','8','9']
+cellSet Colorku = mkCellSet '.' <$> randomArray ['R','O','Y','L','G','B','I','P','V']
+cellSet Wordoku = mkCellSet '.' <$> ((randomArray <<< toCharArray) =<< (randomWord unit))
     
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail

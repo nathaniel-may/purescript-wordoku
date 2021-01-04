@@ -6,7 +6,7 @@ import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
-import Generator (Values(..), Difficulty(..), Opts, generate)
+import Generator (Difficulty(..), Game(..), Opts, generate)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -23,7 +23,7 @@ main = HA.runHalogenAff do
 
 type State =
     { restrictDiag :: Boolean
-    , values       :: Values
+    , values       :: Game
     , difficulty   :: Difficulty
     , loading      :: Boolean
     , generated    :: Maybe String 
@@ -31,7 +31,7 @@ type State =
 
 data Action 
     = Generate      Event
-    | NextValues     Values
+    | NextValues     Game
     | NextDifficulty Difficulty
 
 component =
@@ -44,8 +44,8 @@ component =
 initialState :: forall i. i -> State
 initialState _ = 
     { restrictDiag: false
-    , values: Numbers
-    , difficulty: Difficult
+    , values: Wordoku
+    , difficulty: Tricky
     , loading: false
     , generated: Nothing 
     }
@@ -99,7 +99,7 @@ render st =
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
     NextValues v -> do
-        H.modify_ (_ { values = cycle Numbers v })
+        H.modify_ (_ { values = cycle Sudoku v })
     NextDifficulty d -> do
         H.modify_ (_ { difficulty = cycle Beginner d })
     Generate event -> do
