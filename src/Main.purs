@@ -2,7 +2,8 @@ module Main where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
+import Data.Enum (class Enum, succ)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Generator (Values(..), Difficulty(..), Opts, generate)
@@ -30,8 +31,8 @@ type State =
 
 data Action 
     = Generate      Event
-    | SetValues     Values
-    | SetDifficulty Difficulty
+    | NextValues     Values
+    | NextDifficulty Difficulty
 
 component =
   H.mkComponent
@@ -52,14 +53,8 @@ initialState _ =
 fromState :: State -> Opts
 fromState st = { restrictDiag: false, values: st.values, difficulty: st.difficulty }
 
-toDifficulty :: String -> Difficulty
-toDifficulty "Beginner"  = Beginner
-toDifficulty "Casual"    = Casual
-toDifficulty "Tricky"    = Tricky
-toDifficulty "Difficult" = Difficult
-toDifficulty "Challenge" = Challenge
-toDifficulty "Inhuman"   = Inhuman
-toDifficulty _           = Tricky
+cycle :: ∀ a. Enum a => a -> a -> a
+cycle default = (fromMaybe default) <<< succ
 
 render st =
     HH.div_
@@ -70,16 +65,16 @@ render st =
             [ HH.div_
                 [ HH.button
                     [ HP.type_ HP.ButtonButton
-                    , HP.name "Beginner" -- TODO set this based on state
-                    , HE.onClick (\_ -> Just $ SetDifficulty Beginner) -- TODO make this cycle
+                    , HP.name (show st.difficulty)
+                    , HE.onClick (\_ -> Just $ NextDifficulty st.difficulty)
                     ]
-                    [ HH.text "Beginner" ] -- TODO and this
+                    [ HH.text (show st.difficulty) ]
                 ]
             , HH.button
                 [ HP.type_ HP.ButtonButton
-                , HE.onClick (\_ -> Just $ SetValues Numbers) -- TODO make this cycle through not set.
+                , HE.onClick (\_ -> Just $ NextValues st.values)
                 ]
-                [ HH.text "Sudoku" ] -- TODO set this based on state
+                [ HH.text (show st.values) ]
             ]
             , HH.label_ 
                 [ HH.div_ [ HH.text "" ]
@@ -103,10 +98,10 @@ render st =
 
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
-    SetValues v -> do
-        H.modify_ (_ { values = v })
-    SetDifficulty d -> do
-        H.modify_ (_ { difficulty = d })
+    NextValues v -> do
+        H.modify_ (_ { values = cycle Numbers v })
+    NextDifficulty d -> do
+        H.modify_ (_ { difficulty = cycle Beginner d })
     Generate event -> do
         H.liftEffect $ Event.preventDefault event
         st <- H.gets identity

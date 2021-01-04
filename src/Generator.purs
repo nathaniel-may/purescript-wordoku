@@ -1,5 +1,6 @@
 module Generator where
 
+import Data.Enum
 import Prelude
 
 import Data.Array (cons, deleteAt, index, length, replicate, uncons, (..))
@@ -8,6 +9,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Effect (Effect)
 import Effect.Random (randomInt)
+import Halogen.HTML (samp)
 import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, replace2D, gridString, solve, solveUnique)
 import Wordlist (wordlist)
 
@@ -17,10 +19,40 @@ type Opts = {
     , difficulty   :: Difficulty }
 
 data Values = Numbers | Word | Colors
-derive instance valueEq :: Eq Values
+derive instance valuesEq :: Eq Values
+derive instance valuesOrd :: Ord Values
+instance valuesEnum :: Enum Values where
+    succ Numbers = Just Word
+    succ Word    = Just Colors
+    succ Colors  = Nothing
+    pred Numbers = Nothing
+    pred Word    = Just Numbers
+    pred Colors  = Just Word
+instance showValues :: Show Values where
+    show Numbers = "Numbers"
+    show Word    = "Word"
+    show Colors  = "Colors"
 
-data Difficulty = Beginner | Casual | Tricky | Difficult | Challenge | Inhuman
+data Difficulty = Beginner | Casual | Tricky | Difficult | Challenge
 derive instance difficultyEq :: Eq Difficulty
+derive instance difficultyOrd :: Ord Difficulty
+instance difficultyEnum :: Enum Difficulty where
+    succ Beginner  = Just Casual
+    succ Casual    = Just Tricky
+    succ Tricky    = Just Difficult
+    succ Difficult = Just Challenge
+    succ Challenge = Nothing
+    pred Beginner  = Nothing
+    pred Casual    = Just Beginner
+    pred Tricky    = Just Casual
+    pred Difficult = Just Tricky
+    pred Challenge = Just Difficult
+instance showDifficulty :: Show Difficulty where
+    show Beginner  = "Beginner"
+    show Casual    = "Casual"
+    show Tricky    = "Tricky"
+    show Difficult = "Difficult"
+    show Challenge = "Challenge"
 
 generate :: Opts -> Effect String
 generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
@@ -82,7 +114,6 @@ diffNum Casual    = 50
 diffNum Tricky    = 40
 diffNum Difficult = 30
 diffNum Challenge = 22
-diffNum Inhuman   = 17
 
 emptySudoku :: String
 emptySudoku = fromCharArray $ replicate 81 '.'
