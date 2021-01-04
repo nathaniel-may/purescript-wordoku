@@ -5,6 +5,7 @@ import Prelude
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
+import Effect.Console (log)
 import Effect.Aff.Class (class MonadAff)
 import Generator (Difficulty(..), Game(..), Opts, generate)
 import Halogen as H
@@ -23,15 +24,15 @@ main = HA.runHalogenAff do
 
 type State =
     { restrictDiag :: Boolean
-    , values       :: Game
+    , game         :: Game
     , difficulty   :: Difficulty
     , loading      :: Boolean
     , generated    :: Maybe String 
     }
 
 data Action 
-    = Generate      Event
-    | NextValues     Game
+    = Generate
+    | NextGame       Game
     | NextDifficulty Difficulty
 
 component =
@@ -44,23 +45,25 @@ component =
 initialState :: forall i. i -> State
 initialState _ = 
     { restrictDiag: false
-    , values: Wordoku
+    , game: Wordoku
     , difficulty: Tricky
     , loading: false
     , generated: Nothing 
     }
 
 fromState :: State -> Opts
-fromState st = { restrictDiag: false, values: st.values, difficulty: st.difficulty }
+fromState st = 
+    { restrictDiag: (st.game == Wordoku)
+    , values: st.game
+    , difficulty: st.difficulty 
+    }
 
 cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
 render st =
     HH.div_
-        [ HH.form 
-            [ HE.onSubmit (Just <<< Generate) ]
-            [ HH.h1_ [ HH.text "Sudoku Generator" ]
+        [ HH.h1_ [ HH.text "Sudoku Generator" ]
         , HH.div_
             [ HH.div_
                 [ HH.button
@@ -69,18 +72,19 @@ render st =
                     , HE.onClick (\_ -> Just $ NextDifficulty st.difficulty)
                     ]
                     [ HH.text (show st.difficulty) ]
+                , HH.button
+                    [ HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just $ NextGame st.game)
+                    ]
+                    [ HH.text (show st.game) ]
                 ]
-            , HH.button
-                [ HP.type_ HP.ButtonButton
-                , HE.onClick (\_ -> Just $ NextValues st.values)
-                ]
-                [ HH.text (show st.values) ]
-            ]
             , HH.label_ 
                 [ HH.div_ [ HH.text "" ]
                 , HH.button
                     [ HP.disabled st.loading
-                    , HP.type_ HP.ButtonSubmit
+                    , HP.name "Generate"
+                    , HP.type_ HP.ButtonButton
+                    , HE.onClick (\_ -> Just Generate)
                     ]
                     [ HH.text (if st.loading then "Working..." else "Generate") ]
                 ]
@@ -98,13 +102,17 @@ render st =
 
 handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
-    NextValues v -> do
-        H.modify_ (_ { values = cycle Sudoku v })
+    NextGame g -> do
+        H.liftEffect <<< log $ "game changed to " <> show g
+        H.modify_ (_ { game = cycle Sudoku g })
     NextDifficulty d -> do
+        H.liftEffect <<< log $ "difficulty changed to " <> show d
         H.modify_ (_ { difficulty = cycle Beginner d })
-    Generate event -> do
-        H.liftEffect $ Event.preventDefault event
+    Generate -> do
+        H.liftEffect $ log "generating..."
         st <- H.gets identity
         H.modify_ (_ { loading = true })
-        sudoku <- H.liftEffect $ generate (fromState st)
+        sudoku <-  H.liftAff <<< H.liftEffect $ generate (fromState st)
+        H.liftEffect $ log "generated this game:"
+        H.liftEffect $ log sudoku
         H.modify_ (_ { loading = false, generated = Just sudoku })
