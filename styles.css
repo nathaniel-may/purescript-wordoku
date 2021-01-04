@@ -1,0 +1,48 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+button {
+    background-color: #008CBA;
+    color: white;
+    border: 1px solid black;
+    width: 140px;
+    padding: 15px 32px;
+    margin-right: 5px;
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button:active {
+  background-color: #3e8e41;
+  box-shadow: 0 5px #666;
+  transform: translateY(2px);
+}
+
+[name= Beginner] {
+    background-color: #0033cc;
+}
+
+[name= Casual] {
+    background-color: #009933;
+}
+
+[name= Tricky] {
+    background-color: #ffcc00;
+}
+
+[name= Difficult] {
+    background-color: #ff6600;
+}
+
+[name= Challenge] {
+    background-color: #cc0000;
+}
