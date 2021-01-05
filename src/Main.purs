@@ -64,6 +64,11 @@ fromState st =
 cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
+table :: ∀ a b. HTML a b
+table = HH.table_ $ (HH.tr [ HP.class_ (H.ClassName "Row") ]) <$> rows where 
+    rows :: ∀ a' b'. Array (Array (HTML a' b'))
+    rows = chunksOf 9 $ (\n -> HH.td [ HP.id_ (show n) ] [ HH.text "X" ]) <$> (0..80)
+
 render :: ∀ a. State -> HTML a Action
 render st =
     HH.div 
@@ -95,6 +100,7 @@ render st =
                     ]
                     [ HH.text (if st.loading then "Working..." else "Generate") ]
                 ]
+            , HH.div [ HP.class_ (H.ClassName "VContainer") ] [ table ]
             , HH.div_
                 case st.generated of
                     Nothing -> []
