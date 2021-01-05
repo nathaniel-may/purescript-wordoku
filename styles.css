@@ -19,7 +19,7 @@ h1 {
 }
 
 button {
-    background-color: #008CBA;
+    background-color: rgb(152, 0, 182);
     color: white;
     border: 1px solid black;
     width: 140px;
@@ -42,24 +42,28 @@ button:focus {
     outline: 0;
 }
 
+#Generate {
+    background-color: #019131;
+}
+
 #Generate:active {
-  background-color: grey;
+    background-color: grey;
 }
 
 [name= Beginner] {
-    background-color: #0033cc;
+    background-color: #0071b3;
 }
 
 [name= Casual] {
-    background-color: #009933;
+    background-color: #01a5b1;
 }
 
 [name= Tricky] {
-    background-color: #ffcc00;
+    background-color: #c9a100;
 }
 
 [name= Difficult] {
-    background-color: #ff6600;
+    background-color: #c96b00;
 }
 
 [name= Challenge] {
