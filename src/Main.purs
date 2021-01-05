@@ -77,7 +77,9 @@ render st =
     HH.div
         [ HP.class_ (H.ClassName "VContainer") ]
         [ HH.div_
-            [ HH.h1_ [ HH.text "Sudoku Generator" ]
+            [ HH.div
+                [ HP.class_ (H.ClassName "HContainer") ]
+                [ HH.h1_ [ HH.text "Sudoku Generator" ] ]
             , HH.div
                 [ HP.class_ (H.ClassName "HContainer") ]
                 [ HH.button

@@ -2,6 +2,10 @@ body {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
+h1 {
+    font-size: 2.3em;
+}
+
 .VContainer {
     display: flex;
     flex-direction: vertical;
@@ -32,6 +36,10 @@ button {
 .disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+button:focus {
+    outline: 0;
 }
 
 button:active {
