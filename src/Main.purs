@@ -2,6 +2,7 @@ module Main where
 
 import Prelude
 
+import Data.Array ((..))
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
@@ -10,10 +11,13 @@ import Effect.Console (log)
 import Generator (Difficulty(..), Game(..), Opts, generate)
 import Halogen as H
 import Halogen.Aff as HA
+import Halogen.Component (Component)
 import Halogen.HTML as HH
+import Halogen.HTML.Core (HTML)
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
+import Lib (chunksOf)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -33,6 +37,7 @@ data Action
     | NextGame       Game
     | NextDifficulty Difficulty
 
+component :: ∀ m a b c. MonadAff m => Component HTML a b c m
 component =
   H.mkComponent
     { initialState
@@ -40,7 +45,7 @@ component =
     , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
     }
 
-initialState :: forall i. i -> State
+initialState :: ∀ i. i -> State
 initialState _ = 
     { restrictDiag: false
     , game: Wordoku
@@ -59,6 +64,7 @@ fromState st =
 cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
+render :: ∀ a. State -> HTML a Action
 render st =
     HH.div 
         [ HP.class_ (H.ClassName "VContainer") ]
@@ -101,7 +107,7 @@ render st =
             ]
         ]
 
-handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
+handleAction :: ∀ o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
     NextGame g -> do
         H.liftEffect <<< log $ "game changed to " <> show g
