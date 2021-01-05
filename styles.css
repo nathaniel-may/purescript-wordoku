@@ -98,3 +98,16 @@ td:nth-child(3n) {
 td:first-child {
     border-left:solid medium;
 }
+
+.Circle{
+    background-color:blue;
+    display:block;
+    height:50px;
+    width:50px;
+    border-radius:50%;
+    border: none;
+    margin:auto;
+    color:rgb(78, 47, 189);
+    line-height:50px;
+    text-align:center
+}

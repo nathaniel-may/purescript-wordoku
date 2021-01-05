@@ -18,6 +18,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Lib (chunksOf)
+import Web.HTML.Event.EventTypes (offline)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -64,13 +65,26 @@ fromState st =
 cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
-tableFrom :: ∀ a b. String -> HTML a b
-tableFrom str = HH.table_ $ (HH.tr [ HP.class_ (H.ClassName "Row") ]) <$> rows where 
-    rows :: ∀ a' b'. Array (Array (HTML a' b'))
-    rows = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
-    displayChar :: Char -> String
-    displayChar '.'  = " "
-    displayChar char = singleton char
+tableFrom :: ∀ a b. Game -> String -> HTML a b
+tableFrom game str = case game of
+    Colorku -> mkTable colorkuRows
+    _       -> mkTable rows
+    where
+        rows :: Array (Array (HTML a b))
+        rows = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
+        
+        colorkuRows :: Array (Array (HTML a b))
+        colorkuRows = chunksOf 9 $ (\v -> HH.td_ [ circle ]) <$> (toCharArray str)
+
+        circle :: HTML a b
+        circle = HH.span [ HP.class_ (H.ClassName "Circle") ] []
+
+        displayChar :: Char -> String
+        displayChar '.'  = " "
+        displayChar char = singleton char
+
+        mkTable :: Array (Array (HTML a b)) -> HTML a b
+        mkTable = HH.table_ <<< map (HH.tr [ HP.class_ (H.ClassName "Row") ])
 
 render :: ∀ a. State -> HTML a Action
 render st =
@@ -107,16 +121,7 @@ render st =
                 ]
             , HH.div 
                 [ HP.class_ (H.ClassName "VContainer") ] 
-                [ tableFrom st.puzzle ]
-            -- , HH.div_
-            --     case st.generated of
-            --         Nothing -> []
-            --         Just res ->
-            --             [ HH.h2_
-            --                 [ HH.text "Response:" ]
-            --             , HH.pre_
-            --                 [ HH.code_ [ HH.text res ] ]
-            --             ]
+                [ tableFrom st.game st.puzzle ]
             ]
         ]
 
