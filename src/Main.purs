@@ -18,7 +18,6 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Lib (chunksOf)
-import Web.HTML.Event.EventTypes (offline)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -26,11 +25,12 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 type State =
-    { restrictDiag :: Boolean
-    , game         :: Game
-    , difficulty   :: Difficulty
-    , loading      :: Boolean
-    , puzzle       :: String 
+    { restrictDiag  :: Boolean
+    , selectedGame  :: Game
+    , displayedGame :: Game
+    , difficulty    :: Difficulty
+    , loading       :: Boolean
+    , puzzle        :: String 
     }
 
 data Action 
@@ -49,7 +49,8 @@ component =
 initialState :: ∀ i. i -> State
 initialState _ = 
     { restrictDiag: false
-    , game: Wordoku
+    , selectedGame: Wordoku
+    , displayedGame: Wordoku
     , difficulty: Tricky
     , loading: false
     , puzzle: emptySudoku 
@@ -57,8 +58,8 @@ initialState _ =
 
 fromState :: State -> Opts
 fromState st = 
-    { restrictDiag: (st.game == Wordoku)
-    , values: st.game
+    { restrictDiag: (st.selectedGame == Wordoku)
+    , values: st.selectedGame
     , difficulty: st.difficulty 
     }
 
@@ -89,7 +90,7 @@ tableFrom game str = case game of
         circle _   = HH.text " "
 
         circle' :: String -> HTML a b
-        circle' color = HH.span [ HP.class_ (H.ClassName "Circle"), HP.attr (H.AttrName color) "?????" ] []
+        circle' color = HH.span [ HP.class_ (H.ClassName "Circle"), HP.attr (H.AttrName "Color") color ] []
 
         displayChar :: Char -> String
         displayChar '.'  = " "
@@ -116,9 +117,9 @@ render st =
                     [ HH.text (show st.difficulty) ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
-                    , HE.onClick (\_ -> Just $ NextGame st.game)
+                    , HE.onClick (\_ -> Just $ NextGame st.selectedGame)
                     ]
-                    [ HH.text (show st.game) ]
+                    [ HH.text (show st.selectedGame) ]
                 ]
             , HH.div
                 [ HP.class_ (H.ClassName "VContainer") ] 
@@ -133,7 +134,7 @@ render st =
                 ]
             , HH.div 
                 [ HP.class_ (H.ClassName "VContainer") ] 
-                [ tableFrom st.game st.puzzle ]
+                [ tableFrom st.displayedGame st.puzzle ]
             ]
         ]
 
@@ -141,14 +142,14 @@ handleAction :: ∀ o m. MonadAff m => Action -> H.HalogenM State Action () o m 
 handleAction = case _ of
     NextGame g -> do
         H.liftEffect <<< log $ "game changed to " <> show g
-        H.modify_ (_ { game = cycle Sudoku g })
+        H.modify_ (_ { selectedGame = cycle Sudoku g })
     NextDifficulty d -> do
         H.liftEffect <<< log $ "difficulty changed to " <> show d
         H.modify_ (_ { difficulty = cycle Beginner d })
     Generate -> do
         H.liftEffect $ log "generating..."
         st <- H.gets identity
-        H.modify_ (_ { loading = true })
+        H.modify_ (_ { displayedGame = st.selectedGame, loading = true })
         sudoku <- H.liftAff <<< H.liftEffect $ generate (fromState st)
         H.liftEffect $ log "generated this game:"
         H.liftEffect $ log sudoku

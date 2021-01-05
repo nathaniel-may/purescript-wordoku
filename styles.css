@@ -80,7 +80,7 @@ td {
     height: 2em;
     width: 2em;
     text-align: center;
-    padding: 0;
+    padding: 2px;
 }
 
 tr:first-child {
@@ -100,14 +100,48 @@ td:first-child {
 }
 
 .Circle{
-    background-color:blue;
-    display:block;
-    height:50px;
-    width:50px;
-    border-radius:50%;
+    background-color: black;
+    display: block;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
     border: none;
-    margin:auto;
-    color:rgb(78, 47, 189);
-    line-height:50px;
-    text-align:center
+    color: rgb(78, 47, 189);
+    line-height: 50px;
+    text-align: center
+}
+
+[color= Red] {
+    background-color: #db0000;
+}
+
+[color= Orange] {
+    background-color: rgb(209, 138, 7);
+}
+
+[color= Yellow] {
+    background-color: rgb(228, 206, 8);
+}
+
+[color= Lime] {
+    background-color: rgb(129, 211, 74);
+}
+
+[color= Green] {
+    background-color: rgb(0, 156, 47);
+}
+
+[color= Blue] {
+    background-color: rgb(147, 201, 233);
+}
+
+[color= Indigo] {
+    background-color: rgb(0, 39, 214);
+}
+
+[color= Purple] {
+    background-color: rgb(188, 143, 209);
+}
+[color= Violet] {
+    background-color: #6a17a1;
 }
