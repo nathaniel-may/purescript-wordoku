@@ -143,8 +143,9 @@ render st =
 handleAction :: ∀ o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
     NextGame g -> do
-        H.liftEffect <<< log $ "game changed to " <> show g
-        H.modify_ (_ { selectedGame = cycle Sudoku g })
+        let selected = cycle Sudoku g
+        H.liftEffect <<< log $ "game changed to " <> show selected
+        H.modify_ (_ { selectedGame = selected })
     NextDifficulty d -> do
         H.liftEffect <<< log $ "difficulty changed to " <> show d
         H.modify_ (_ { difficulty = cycle Beginner d })
