@@ -74,10 +74,22 @@ tableFrom game str = case game of
         rows = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
         
         colorkuRows :: Array (Array (HTML a b))
-        colorkuRows = chunksOf 9 $ (\v -> HH.td_ [ circle ]) <$> (toCharArray str)
+        colorkuRows = chunksOf 9 $ (\color -> HH.td_ [ circle color ]) <$> (toCharArray str)
 
-        circle :: HTML a b
-        circle = HH.span [ HP.class_ (H.ClassName "Circle") ] []
+        circle :: Char -> HTML a b
+        circle 'R' = circle' "Red"
+        circle 'O' = circle' "Orange"
+        circle 'Y' = circle' "Yellow"
+        circle 'L' = circle' "Lime"
+        circle 'G' = circle' "Green"
+        circle 'B' = circle' "Blue"
+        circle 'I' = circle' "Indigo"
+        circle 'P' = circle' "Purple"
+        circle 'V' = circle' "Violet"
+        circle _   = HH.text " "
+
+        circle' :: String -> HTML a b
+        circle' color = HH.span [ HP.class_ (H.ClassName "Circle"), HP.attr (H.AttrName color) "?????" ] []
 
         displayChar :: Char -> String
         displayChar '.'  = " "
