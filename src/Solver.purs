@@ -8,11 +8,11 @@ module Solver where
 
 import Prelude
 
-import Data.Array (all, any, concat, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (:), (..))
+import Data.Array (all, any, concat, cons, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Either (Either(..), hush)
 import Data.Foldable (foldl, minimumBy)
-import Data.Int (parity, quot)
+import Data.Int (quot)
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -68,6 +68,12 @@ mkCellSet empty allValues
     | empty `elem` allValues = Left "the empty character cannot also be in the list of values"
     | length (unique allValues) /= length allValues = Left "all characters must be unique"
     | otherwise = Right (CellSet empty allValues)
+
+cellSetFromPuzzle :: String -> Either String CellSet
+cellSetFromPuzzle str = mkCellSet '.' <<< delete '.' $ foldl 
+    (\arr c -> if c `elem` arr then arr else cons c arr) 
+    [] 
+    (toCharArray str)
 
 readCell :: CellSet -> Char -> Maybe Cell
 readCell (CellSet empty allValues) v = 

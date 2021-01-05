@@ -2,14 +2,17 @@ module Generator where
 
 import Prelude
 
-import Data.Array (cons, deleteAt, index, length, replicate, uncons, (..))
+import Data.Array (cons, deleteAt, elem, index, foldl, length, replicate, uncons, zip, (..))
 import Data.Either (Either(..), hush)
 import Data.Enum (class Enum)
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String.CodeUnits (fromCharArray, toCharArray)
+import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, replace2D, gridString, solve, solveUnique)
+import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, readNumberGrid, replace2D, gridString, solve, solveUnique)
 import Wordlist (wordlist)
 
 type Opts = { 
@@ -54,18 +57,44 @@ instance showDifficulty :: Show Difficulty where
     show Challenge = "Challenge"
 
 generate :: Opts -> Effect String
-generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
-    mCellSet <- hush <$> cellSet opts.values
-    let mFilled = solve opts.restrictDiag =<< ((\set -> readGrid set emptySudoku) =<< mCellSet)
+generate = generate' --where
+
+generate' :: Opts -> Effect String
+generate' opts = case opts.values of
+    Sudoku  -> game opts
+    Colorku -> mapValues (Map.fromFoldable $ numbers `zip` colors) <$> game opts
+    Wordoku -> do
+        g <- game opts
+        w <- randomWord unit
+        pure $ mapValues (wordMap w g) g
+
+game :: Opts -> Effect String
+game opts = generateSudoku opts.restrictDiag opts.difficulty
+
+wordMap :: String -> String -> Map Char Char
+wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
+    where solved = fromMaybe sudoku $ map gridString $ solve true <<< fromMaybe [] <<< readNumberGrid $ sudoku
+
+-- keys become values
+mapValues :: Map Char Char -> String -> String
+mapValues m str = foldl 
+    (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
+    ""
+    (toCharArray str)
+
+generateSudoku :: Boolean -> Difficulty -> Effect String
+generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
+    mCellSet <- hush <<< mkCellSet '.' <$> randomArray numbers
+    let mFilled = solve restrictDiag =<< ((\set -> readGrid set emptySudoku) =<< mCellSet)
     randIdxs <- randomArray (0..80)
-    pure $ do 
+    pure $ do
         cs <- mCellSet
         filled <- mFilled
-        reduceBy cs (81 - diffNum opts.difficulty) randIdxs filled
+        reduceBy cs (81 - diffNum difficulty) randIdxs filled
     where
         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
         reduceBy cs count idxs grid = if count > 64 then Nothing else do
-            lr <- solveUnique opts.restrictDiag grid
+            lr <- solveUnique restrictDiag grid
             { head: idx, tail: rands } <- uncons idxs
             -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
             case lr of 
@@ -85,13 +114,28 @@ generate opts = toStringOrLoop =<< do -- may need to generate another puzzle if 
             replace2D idx (Possible allValues) grid
         
         toStringOrLoop :: Maybe Grid -> Effect String
-        toStringOrLoop Nothing = generate opts
+        toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
         toStringOrLoop (Just grid) = pure $ gridString grid
 
-cellSet :: Game -> Effect (Either String CellSet)
-cellSet Sudoku = mkCellSet '.' <$> randomArray ['1','2','3','4','5','6','7','8','9']
-cellSet Colorku = mkCellSet '.' <$> randomArray ['R','O','Y','L','G','B','I','P','V']
-cellSet Wordoku = mkCellSet '.' <$> ((randomArray <<< toCharArray) =<< (randomWord unit))
+diagonalOf :: String -> String
+diagonalOf str = foldl onlyDiag "" $ toCharArray str `zip` (0..80) where
+
+    onlyDiag :: String -> Tuple Char Int -> String
+    onlyDiag s (Tuple c i) = if i `elem` idxs then s <> singleton c else s
+
+    idxs :: Array Int
+    idxs = map (\x -> 10 * x) (0..8)
+
+numbers :: Array Char
+numbers = ['1','2','3','4','5','6','7','8','9']
+
+colors :: Array Char
+colors = ['R','O','Y','L','G','B','I','P','V']
+
+-- cellSet :: Game -> Effect (Either String CellSet)
+-- cellSet Sudoku = mkCellSet '.' <$> randomArray ['1','2','3','4','5','6','7','8','9']
+-- cellSet Colorku = mkCellSet '.' <$> randomArray ['R','O','Y','L','G','B','I','P','V']
+-- cellSet Wordoku = mkCellSet '.' <$> ((randomArray <<< toCharArray) =<< (randomWord unit))
     
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail
