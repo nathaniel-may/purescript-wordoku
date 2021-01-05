@@ -128,11 +128,11 @@ render st =
                 [ HH.div_ [ HH.text "" ]
                 , HH.button
                     [ HP.disabled st.loading
-                    , HP.name "Generate"
+                    , HP.id_ "Generate"
                     , HP.type_ HP.ButtonButton
                     , HE.onClick (\_ -> Just Generate)
                     ]
-                    [ HH.text (if st.loading then "Working..." else "Generate") ]
+                    [ HH.text "Generate" ]
                 ]
             , HH.div 
                 [ HP.class_ (H.ClassName "VContainer") ] 
