@@ -1,15 +1,14 @@
 module Generator where
 
-import Data.Enum
 import Prelude
 
 import Data.Array (cons, deleteAt, index, length, replicate, uncons, (..))
 import Data.Either (Either(..), hush)
+import Data.Enum (class Enum)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Halogen.HTML (samp)
 import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, replace2D, gridString, solve, solveUnique)
 import Wordlist (wordlist)
 
