@@ -2,13 +2,13 @@ module Main where
 
 import Prelude
 
-import Data.Array ((..))
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String.CodeUnits (singleton, toCharArray)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
-import Generator (Difficulty(..), Game(..), Opts, generate)
+import Generator (Difficulty(..), Game(..), Opts, emptySudoku, generate)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.Component (Component)
@@ -29,7 +29,7 @@ type State =
     , game         :: Game
     , difficulty   :: Difficulty
     , loading      :: Boolean
-    , generated    :: Maybe String 
+    , puzzle       :: String 
     }
 
 data Action 
@@ -51,7 +51,7 @@ initialState _ =
     , game: Wordoku
     , difficulty: Tricky
     , loading: false
-    , generated: Nothing 
+    , puzzle: emptySudoku 
     }
 
 fromState :: State -> Opts
@@ -64,14 +64,17 @@ fromState st =
 cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
-table :: ∀ a b. HTML a b
-table = HH.table_ $ (HH.tr [ HP.class_ (H.ClassName "Row") ]) <$> rows where 
+tableFrom :: ∀ a b. String -> HTML a b
+tableFrom str = HH.table_ $ (HH.tr [ HP.class_ (H.ClassName "Row") ]) <$> rows where 
     rows :: ∀ a' b'. Array (Array (HTML a' b'))
-    rows = chunksOf 9 $ (\n -> HH.td [ HP.id_ (show n) ] [ HH.text "X" ]) <$> (0..80)
+    rows = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
+    displayChar :: Char -> String
+    displayChar '.'  = " "
+    displayChar char = singleton char
 
 render :: ∀ a. State -> HTML a Action
 render st =
-    HH.div 
+    HH.div
         [ HP.class_ (H.ClassName "VContainer") ]
         [ HH.div_
             [ HH.h1_ [ HH.text "Sudoku Generator" ]
@@ -100,16 +103,18 @@ render st =
                     ]
                     [ HH.text (if st.loading then "Working..." else "Generate") ]
                 ]
-            , HH.div [ HP.class_ (H.ClassName "VContainer") ] [ table ]
-            , HH.div_
-                case st.generated of
-                    Nothing -> []
-                    Just res ->
-                        [ HH.h2_
-                            [ HH.text "Response:" ]
-                        , HH.pre_
-                            [ HH.code_ [ HH.text res ] ]
-                        ]
+            , HH.div 
+                [ HP.class_ (H.ClassName "VContainer") ] 
+                [ tableFrom st.puzzle ]
+            -- , HH.div_
+            --     case st.generated of
+            --         Nothing -> []
+            --         Just res ->
+            --             [ HH.h2_
+            --                 [ HH.text "Response:" ]
+            --             , HH.pre_
+            --                 [ HH.code_ [ HH.text res ] ]
+            --             ]
             ]
         ]
 
@@ -128,4 +133,4 @@ handleAction = case _ of
         sudoku <- H.liftAff <<< H.liftEffect $ generate (fromState st)
         H.liftEffect $ log "generated this game:"
         H.liftEffect $ log sudoku
-        H.modify_ (_ { loading = false, generated = Just sudoku })
+        H.modify_ (_ { loading = false, puzzle = sudoku })

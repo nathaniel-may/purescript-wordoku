@@ -60,6 +60,33 @@ button:active {
     background-color: #cc0000;
 }
 
-table {
-    margin-top: 20px
+table { 
+    margin: 2em auto;
+    border-collapse: collapse; 
+    font-family: Calibri, sans-serif;
+    font-size: 1.5em;
+}
+
+td { 
+    border: solid thin;
+    height: 2em;
+    width: 2em;
+    text-align: center;
+    padding: 0;
+}
+
+tr:first-child {
+    border-top:solid medium;
+}
+
+tr:nth-child(3n) td { 
+    border-bottom: solid medium; 
+}
+
+td:nth-child(3n) {
+    border-right:solid medium;
+}
+
+td:first-child {
+    border-left:solid medium;
 }
