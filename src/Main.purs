@@ -5,8 +5,8 @@ import Prelude
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
-import Effect.Console (log)
 import Effect.Aff.Class (class MonadAff)
+import Effect.Console (log)
 import Generator (Difficulty(..), Game(..), Opts, generate)
 import Halogen as H
 import Halogen.Aff as HA
@@ -60,10 +60,12 @@ cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
 render st =
-    HH.div_
-        [ HH.h1_ [ HH.text "Sudoku Generator" ]
-        , HH.div_
-            [ HH.div_
+    HH.div 
+        [ HP.class_ (H.ClassName "VContainer") ]
+        [ HH.div_
+            [ HH.h1_ [ HH.text "Sudoku Generator" ]
+            , HH.div
+                [ HP.class_ (H.ClassName "HContainer") ]
                 [ HH.button
                     [ HP.type_ HP.ButtonButton
                     , HP.name (show st.difficulty)
@@ -76,7 +78,8 @@ render st =
                     ]
                     [ HH.text (show st.game) ]
                 ]
-            , HH.label_ 
+            , HH.div
+                [ HP.class_ (H.ClassName "VContainer") ] 
                 [ HH.div_ [ HH.text "" ]
                 , HH.button
                     [ HP.disabled st.loading

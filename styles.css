@@ -2,13 +2,26 @@ body {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
+.VContainer {
+    display: flex;
+    flex-direction: vertical;
+    justify-content: center;
+}
+
+.HContainer {
+    display: flex;
+    flex-direction: horizontal;
+    justify-content: center;
+}
+
 button {
     background-color: #008CBA;
     color: white;
     border: 1px solid black;
     width: 140px;
     padding: 15px 32px;
-    margin-right: 5px;
+    margin-left: 3px;
+    margin-right: 3px;
     margin-top: 10px;
     font-size: 16px;
     text-align: center;
