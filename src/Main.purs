@@ -5,6 +5,7 @@ import Prelude
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (singleton, toCharArray)
+import Data.String.Common (toUpper)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
@@ -67,15 +68,16 @@ cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
 tableFrom :: ∀ a b. Game -> String -> HTML a b
-tableFrom game str = case game of
-    Colorku -> mkTable colorkuRows
-    _       -> mkTable rows
+tableFrom game s = case game of
+    Colorku -> mkTable <<< colorkuRows $ s
+    Wordoku -> mkTable <<< rows $ toUpper s
+    Sudoku  -> mkTable <<< rows $ s
     where
-        rows :: Array (Array (HTML a b))
-        rows = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
+        rows :: String -> Array (Array (HTML a b))
+        rows str = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
         
-        colorkuRows :: Array (Array (HTML a b))
-        colorkuRows = chunksOf 9 $ (\color -> HH.td_ [ circle color ]) <$> (toCharArray str)
+        colorkuRows :: String -> Array (Array (HTML a b))
+        colorkuRows str = chunksOf 9 $ (\color -> HH.td_ [ circle color ]) <$> (toCharArray str)
 
         circle :: Char -> HTML a b
         circle 'R' = circle' "Red"
