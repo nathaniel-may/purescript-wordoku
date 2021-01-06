@@ -1,0 +1,159 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+h1 {
+    font-size: 2.3em;
+}
+
+.VContainer {
+    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+    display: -ms-flexbox;      /* TWEENER - IE 10 */
+    display: -webkit-flex;     /* NEW - Chrome */
+    display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+    flex-direction: vertical;
+    justify-content: center;
+}
+
+.HContainer {
+    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+    display: -ms-flexbox;      /* TWEENER - IE 10 */
+    display: -webkit-flex;     /* NEW - Chrome */
+    display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+    flex-direction: horizontal;
+    justify-content: center;
+}
+
+button {
+    background-color: rgb(152, 0, 182);
+    color: white;
+    border: 1px solid black;
+    width: 140px;
+    padding: 15px 32px;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 10px;
+    font-size: 16px;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+button:focus {
+    outline: 0;
+}
+
+#Generate {
+    background-color: #019131;
+}
+
+#Generate:active {
+    background-color: grey;
+}
+
+[name= Beginner] {
+    background-color: #0071b3;
+}
+
+[name= Casual] {
+    background-color: #01a5b1;
+}
+
+[name= Tricky] {
+    background-color: #c9a100;
+}
+
+[name= Difficult] {
+    background-color: #c96b00;
+}
+
+[name= Challenge] {
+    background-color: #cc0000;
+}
+
+table { 
+    margin: 2em auto;
+    border-collapse: collapse; 
+    font-family: Calibri, sans-serif;
+    font-size: 1.5em;
+}
+
+td { 
+    border: solid thin;
+    height: 2em;
+    width: 2em;
+    text-align: center;
+    padding: 2px;
+}
+
+tr:first-child {
+    border-top:solid medium;
+}
+
+tr:nth-child(3n) td { 
+    border-bottom: solid medium; 
+}
+
+td:nth-child(3n) {
+    border-right:solid medium;
+}
+
+td:first-child {
+    border-left:solid medium;
+}
+
+.Circle{
+    background-color: black;
+    display: block;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+    border: none;
+    color: rgb(78, 47, 189);
+    line-height: 50px;
+    text-align: center
+}
+
+[color= Red] {
+    background-color: #db0000;
+}
+
+[color= Orange] {
+    background-color: rgb(209, 138, 7);
+}
+
+[color= Yellow] {
+    background-color: rgb(228, 206, 8);
+}
+
+[color= Lime] {
+    background-color: rgb(129, 211, 74);
+}
+
+[color= Green] {
+    background-color: rgb(0, 156, 47);
+}
+
+[color= Blue] {
+    background-color: rgb(147, 201, 233);
+}
+
+[color= Indigo] {
+    background-color: rgb(0, 39, 214);
+}
+
+[color= Purple] {
+    background-color: rgb(188, 143, 209);
+}
+[color= Violet] {
+    background-color: #6a17a1;
+}
+
+/*# sourceMappingURL=/styles.8986bff4.css.map */
