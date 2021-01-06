@@ -104,6 +104,8 @@ button:focus {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 100%;
+    padding-top: 100%; /* 1:1 Aspect Ratio */
     
     display: table-cell;
     border: solid thin;
