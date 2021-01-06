@@ -125,8 +125,7 @@ render st =
                 ]
             , HH.div
                 [ HP.class_ (H.ClassName "VContainer") ] 
-                [ HH.div_ [ HH.text "" ]
-                , HH.button
+                [ HH.button
                     [ HP.disabled st.loading
                     , HP.id_ "Generate"
                     , HP.type_ HP.ButtonButton
