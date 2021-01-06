@@ -104,7 +104,6 @@ showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((join
 
 ----- solver fns -----
 
--- TODO check usage of set vs array here
 pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = fixM pruneCellsByExclusives =<< fixM pruneCellsByFixed cells
 
@@ -118,12 +117,6 @@ subGridsToRows = (=<<)
 
 diagIdxs :: Array Int
 diagIdxs = map ((*) 10) (0..8)
-
-diagonalOf :: Grid -> Row
-diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
-
-replaceDiagonal :: Row -> Grid -> Grid
-replaceDiagonal row grid = foldl (\grid' (Tuple cell i) -> replace2D i cell grid') grid (row `zip` diagIdxs)
 
 -- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
 exclusivePossibilities :: Row -> Array (Array Char)
@@ -178,23 +171,33 @@ pruneCellsByExclusives cells = case exclusives of
             intersection :: Array Char
             intersection = xs `Array.intersect` allExclusives
 
--- TODO this is where to add the word diagonal constraint
 pruneGrid' :: Grid -> Maybe Grid
-pruneGrid' grid = traverse pruneCells grid -- prune cells as rows
-  >>= map transpose <<< traverse pruneCells <<< transpose -- make columns into rows, prune and replace
-  >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows -- make subgrids rows, prune and replace
+pruneGrid' grid = 
+    -- prune cells as rows
+    traverse pruneCells grid
+    -- make columns into rows, prune and replace 
+    >>= map transpose <<< traverse pruneCells <<< transpose
+    -- make subgrids rows, prune and replace
+    >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
 
 pruneGridWithDiagConstraint' :: Grid -> Maybe Grid
 pruneGridWithDiagConstraint' grid = pruneDiag =<< pruneGrid' grid where
+    
     pruneDiag :: Grid -> Maybe Grid
     pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
 
-fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
-fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
+diagonalOf :: Grid -> Row
+diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
+
+replaceDiagonal :: Row -> Grid -> Grid
+replaceDiagonal row grid = foldl (\grid' (Tuple cell i) -> replace2D i cell grid') grid (row `zip` diagIdxs)
 
 pruneGridWithDiagConstraint :: Boolean -> Grid -> Maybe Grid
 pruneGridWithDiagConstraint true = fixM pruneGridWithDiagConstraint'
 pruneGridWithDiagConstraint false = fixM pruneGrid'
+
+fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
+fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
 
 ------ backtracking fns ------
 
@@ -223,13 +226,16 @@ nextGrids grid = do
 replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
 replaceAt idx f xs = fromMaybe xs $ do
     x <- index xs idx
+    -- intentional shaddowing to prevent accidental refrence to input
     xs <- deleteAt idx xs
     insertAt idx (f x) xs
 
+-- replace an element by its index [0,80] in a 9x9 grid
 replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
 replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
     in replaceAt x (replaceAt y (const v))
 
+-- retrieve an element by its index [0,80] in a 9x9 grid
 index2D :: ∀ a. Array (Array a) -> Int -> Maybe a
 index2D arr i = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
     in (\arr' -> index arr' x) =<< (index arr y)
