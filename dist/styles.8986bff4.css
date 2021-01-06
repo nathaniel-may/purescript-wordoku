@@ -1,9 +1,11 @@
 body {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+    color: #444
 }
 
 h1 {
     font-size: 2.3em;
+    color: #333
 }
 
 .VContainer {
@@ -29,7 +31,7 @@ h1 {
 button {
     background-color: rgb(152, 0, 182);
     color: white;
-    border: 1px solid black;
+    border: 1px solid #444;
     width: 140px;
     padding: 15px 32px;
     margin-left: 5px;
@@ -67,7 +69,7 @@ button:focus {
 }
 
 [name= Tricky] {
-    background-color: #c9a100;
+    background-color: #E5BC3B;
 }
 
 [name= Difficult] {
@@ -87,10 +89,10 @@ table {
 
 td { 
     border: solid thin;
+    padding: 2px;
     height: 2em;
     width: 2em;
     text-align: center;
-    padding: 2px;
 }
 
 tr:first-child {
@@ -116,7 +118,7 @@ td:first-child {
     width: 50px;
     border-radius: 50%;
     border: none;
-    color: rgb(78, 47, 189);
+    color: #000;
     line-height: 50px;
     text-align: center
 }
@@ -138,7 +140,7 @@ td:first-child {
 }
 
 [color= Green] {
-    background-color: rgb(0, 156, 47);
+    background-color: rgb(0, 126, 38);
 }
 
 [color= Blue] {
