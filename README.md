@@ -3,20 +3,34 @@
 This is a full halogen app which includes a sudoku solver, sudoku generator, and the option to map sudokus to colors or words. The wordoku variant asserts the additional constraint that the diagonal from the upper left to the lower right must form a complete, unique set. This diagonal then spells a 9 letter english word when solved.
 
 ## Dev
-install dependencies:
+To install all PureScript dev env dependencies: (only needs to be run once)
 ```
-bower install
-```
-
-build purescript (output in `/output/`)
-```
-pulp build
+npm install
 ```
 
-build deployable bundle (output in `/dist/`)
+Install app dependencies:
 ```
-parcel index.html
+npm run-script install
 ```
+
+Build the app without running the developer server:
+```
+npm run-script build
+```
+
+Build and run developer server:
+```
+npm run-script develop
+```
+
+Under the hood, npm uses the following tools and target directores:
+
+| Tool     | Purpose                                 | Directory         |
+| -------- | --------------------------------------- | ----------------- |
+| `npm`    | install purescript, bower, pulp, parcel | node_modules      |
+| `bower`  | install app dependencies                | bower_components/ |
+| `pulp`   | build purescript dependencies, test app | output/           |
+| `parcel` | making a deployment bundle              | dist/             |
 
 ## Deployment
-`rm -rf ./dist` then run through all the build steps above, and push the `/dist/` directory to github. Netlify will automatically pick that up. DNS already points the sudoku.nathanielmay.com subdomain to the netlify app.
+Test locally and push to main. Netlify will build with the npm build script and DNS already points the sudoku.nathanielmay.com subdomain to the netlify app.
