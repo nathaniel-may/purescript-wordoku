@@ -73,11 +73,13 @@ tableFrom game s = case game of
     Wordoku -> mkTable <<< rows $ toUpper s
     Sudoku  -> mkTable <<< rows $ s
     where
+        td' = HH.div [ HP.class_ (H.ClassName "td") ]
+
         rows :: String -> Array (Array (HTML a b))
-        rows str = chunksOf 9 $ (\v -> HH.td_ [ HH.text (displayChar v) ]) <$> (toCharArray str)
+        rows str = chunksOf 9 $ (\v -> td' [ HH.text (displayChar v) ]) <$> (toCharArray str)
         
         colorkuRows :: String -> Array (Array (HTML a b))
-        colorkuRows str = chunksOf 9 $ (\color -> HH.td_ [ circle color ]) <$> (toCharArray str)
+        colorkuRows str = chunksOf 9 $ (\color -> td' [ circle color ]) <$> (toCharArray str)
 
         circle :: Char -> HTML a b
         circle 'R' = circle' "Red"
@@ -89,7 +91,7 @@ tableFrom game s = case game of
         circle 'I' = circle' "Indigo"
         circle 'P' = circle' "Purple"
         circle 'V' = circle' "Violet"
-        circle _   = HH.text " "
+        circle _   = circle' "White"
 
         circle' :: String -> HTML a b
         circle' color = HH.span [ HP.class_ (H.ClassName "Circle"), HP.attr (H.AttrName "Color") color ] []
@@ -99,7 +101,7 @@ tableFrom game s = case game of
         displayChar char = singleton char
 
         mkTable :: Array (Array (HTML a b)) -> HTML a b
-        mkTable = HH.table_ <<< map (HH.tr [ HP.class_ (H.ClassName "Row") ])
+        mkTable = HH.div [ HP.id_ "table" ] <<< map (HH.div [ HP.class_ $ H.ClassName "tr" ])
 
 render :: ∀ a. State -> HTML a Action
 render st =
