@@ -8,6 +8,7 @@ module Solver where
 
 import Prelude
 
+import Control.Bind (bindFlipped)
 import Data.Array (all, any, concat, cons, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (:), (..))
 import Data.Array as Array
 import Data.Either (Either(..), hush)
@@ -131,12 +132,12 @@ exclusivePossibilities = Array.fromFoldable <<< Map.values
     <<< foldl (\acc (Tuple k v) -> Map.insertWith (<>) v [k] acc) Map.empty
     <<< (\m -> List.fromFoldable (Map.keys m) `List.zip` Map.values m)
     <<< Map.filter ((\x -> x < 4) <<< length)
-    <<< foldl
-      (\acc tuple -> case tuple of
-        (Tuple i (Possible xs)) -> foldl (\acc' x -> Map.insertWith (<>) x [i] acc') acc xs
-        _ -> acc) -- won't get here since we previously filtered for `Possible` values
-      Map.empty
-    <<< filter (isPossible <<< snd)
+    <<< foldl 
+        (\acc (Tuple i xs) -> foldl (\acc' x -> Map.insertWith (<>) x [i] acc') acc xs) 
+        Map.empty
+    <<< bindFlipped (\tuple -> case tuple of -- bind as filter
+        (Tuple i (Possible xs)) -> [Tuple i xs]
+        (Tuple _ (Fixed _))     -> [])
     <<< zip (1..9)
 
 makeCell :: Array Char -> Maybe Cell
