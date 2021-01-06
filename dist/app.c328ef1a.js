@@ -50497,10 +50497,13 @@ var NextDifficulty = function () {
 
 var tableFrom = function tableFrom(game) {
   return function (s) {
+    var td$prime = Halogen_HTML_Elements.div([Halogen_HTML_Properties.class_("td")]);
+
     var mkTable = function () {
-      var $33 = Data_Functor.map(Data_Functor.functorArray)(Halogen_HTML_Elements.tr([Halogen_HTML_Properties.class_("Row")]));
-      return function ($34) {
-        return Halogen_HTML_Elements.table_($33($34));
+      var $33 = Halogen_HTML_Elements.div([Halogen_HTML_Properties.id_("table")]);
+      var $34 = Data_Functor.map(Data_Functor.functorArray)(Halogen_HTML_Elements.div([Halogen_HTML_Properties.class_("tr")]));
+      return function ($35) {
+        return $33($34($35));
       };
     }();
 
@@ -50515,7 +50518,7 @@ var tableFrom = function tableFrom(game) {
 
     var rows = function rows(str) {
       return Lib.chunksOf(9)(Data_Functor.map(Data_Functor.functorArray)(function (v) {
-        return Halogen_HTML_Elements.td_([Halogen_HTML_Core.text(displayChar(v))]);
+        return td$prime([Halogen_HTML_Core.text(displayChar(v))]);
       })(Data_String_CodeUnits.toCharArray(str)));
     };
 
@@ -50577,12 +50580,12 @@ var tableFrom = function tableFrom(game) {
       }
 
       ;
-      return Halogen_HTML_Core.text(" ");
+      return circle$prime("White");
     };
 
     var colorkuRows = function colorkuRows(str) {
       return Lib.chunksOf(9)(Data_Functor.map(Data_Functor.functorArray)(function (color) {
-        return Halogen_HTML_Elements.td_([circle(color)]);
+        return td$prime([circle(color)]);
       })(Data_String_CodeUnits.toCharArray(str)));
     };
 
@@ -50638,10 +50641,10 @@ var fromState = function fromState(st) {
 
 var cycle = function cycle(dictEnum) {
   return function ($$default) {
-    var $35 = Data_Maybe.fromMaybe($$default);
-    var $36 = Data_Enum.succ(dictEnum);
-    return function ($37) {
-      return $35($36($37));
+    var $36 = Data_Maybe.fromMaybe($$default);
+    var $37 = Data_Enum.succ(dictEnum);
+    return function ($38) {
+      return $36($37($38));
     };
   };
 };
@@ -50740,7 +50743,7 @@ var handleAction = function handleAction(dictMonadAff) {
     }
 
     ;
-    throw new Error("Failed pattern match at Main (line 143, column 16 - line 158, column 59): " + [v.constructor.name]);
+    throw new Error("Failed pattern match at Main (line 145, column 16 - line 160, column 59): " + [v.constructor.name]);
   };
 };
 
@@ -50807,7 +50810,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61317" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52919" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
