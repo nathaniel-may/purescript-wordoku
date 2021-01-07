@@ -13,9 +13,9 @@ Install app dependencies:
 npm run-script install
 ```
 
-Build the app without running the developer server:
+Build the app with visible compiler errors:
 ```
-npm run-script build
+pulp build
 ```
 
 Build and run developer server:
