@@ -132,11 +132,6 @@ numbers = ['1','2','3','4','5','6','7','8','9']
 colors :: Array Char
 colors = ['R','O','Y','L','G','B','I','P','V']
 
--- cellSet :: Game -> Effect (Either String CellSet)
--- cellSet Sudoku = mkCellSet '.' <$> randomArray ['1','2','3','4','5','6','7','8','9']
--- cellSet Colorku = mkCellSet '.' <$> randomArray ['R','O','Y','L','G','B','I','P','V']
--- cellSet Wordoku = mkCellSet '.' <$> ((randomArray <<< toCharArray) =<< (randomWord unit))
-    
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail
     <<< index wordlist 
