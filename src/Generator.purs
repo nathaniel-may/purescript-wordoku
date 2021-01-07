@@ -3,7 +3,7 @@ module Generator where
 import Prelude
 
 import Data.Array (cons, deleteAt, elem, index, foldl, length, replicate, uncons, zip, (..))
-import Data.Either (Either(..), hush)
+import Data.Either (hush)
 import Data.Enum (class Enum)
 import Data.Map (Map)
 import Data.Map as Map
