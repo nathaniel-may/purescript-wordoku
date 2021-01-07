@@ -22,7 +22,7 @@ import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Lib (Tuple3(..), chunksOf, on, transpose, unique, zip3)
+import Lib (Tuple3(..), chunksOf, isUnique, on, transpose, unique, zip3)
 
 numberPuzzle :: String
 numberPuzzle = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
@@ -251,14 +251,7 @@ isInvalidRow row =
         emptyPossibles = (flip any) row (\cell -> case cell of 
             Possible [] -> true
             _ -> false)
-    in emptyPossibles || hasDups fixeds where
-
-    hasDups :: ∀ a. Eq a => Array a -> Boolean
-    hasDups l = hasDups' l []
-
-    hasDups' :: ∀ a. Eq a => Array a -> Array a -> Boolean
-    hasDups' arr seen = fromMaybe false $ f <$> uncons arr where
-        f x = if x.head `elem` seen then true else hasDups' x.tail (x.head : seen)
+    in emptyPossibles || (not isUnique $ fixeds) 
 
 isGridInvalid' :: Grid -> Boolean
 isGridInvalid' grid = any isInvalidRow grid

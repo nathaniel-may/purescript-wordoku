@@ -3,8 +3,9 @@ module Lib where
 import Prelude
 import Data.Array (cons, drop, null, take, uncons, (:))
 import Data.Array as Array
+import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Foldable (foldl)
 
 
@@ -13,6 +14,13 @@ data Tuple3 a b c = Tuple3 a b c
 -- returns only the unique elements from the set
 unique :: ∀ a. Eq a => Ord a => Array a -> Array a
 unique xs = Array.fromFoldable <<< Map.keys $ foldl (\m x -> Map.insert x unit m) Map.empty xs
+
+isUnique :: ∀ a. Eq a => Ord a => Array a -> Boolean
+isUnique l = isUnique' l Map.empty
+
+isUnique' :: ∀ a. Eq a => Ord a => Array a -> Map a Unit -> Boolean
+isUnique' arr seen = fromMaybe true $ f <$> uncons arr where
+    f x = if isJust $ x.head `Map.lookup` seen then false else isUnique' x.tail (Map.insert x.head unit seen)
 
 chunksOf :: ∀ a. Int -> Array a -> Array (Array a)
 chunksOf n xs =
