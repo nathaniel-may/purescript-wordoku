@@ -57,30 +57,30 @@ instance showDifficulty :: Show Difficulty where
     show Challenge = "Challenge"
 
 generate :: Opts -> Effect String
-generate = generate' --where
+generate = generate' where
 
-generate' :: Opts -> Effect String
-generate' opts = case opts.values of
-    Sudoku  -> game opts
-    Colorku -> mapValues (Map.fromFoldable $ numbers `zip` colors) <$> game opts
-    Wordoku -> do
-        g <- game opts
-        w <- randomWord unit
-        pure $ mapValues (wordMap w g) g
+    generate' :: Opts -> Effect String
+    generate' opts = case opts.values of
+        Sudoku  -> game opts
+        Colorku -> mapValues (Map.fromFoldable $ numbers `zip` colors) <$> game opts
+        Wordoku -> do
+            g <- game opts
+            w <- randomWord unit
+            pure $ mapValues (wordMap w g) g
 
-game :: Opts -> Effect String
-game opts = generateSudoku opts.restrictDiag opts.difficulty
+    game :: Opts -> Effect String
+    game opts = generateSudoku opts.restrictDiag opts.difficulty
 
-wordMap :: String -> String -> Map Char Char
-wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
-    where solved = fromMaybe sudoku $ map gridString $ solve true <<< fromMaybe [] <<< readNumberGrid $ sudoku
+    wordMap :: String -> String -> Map Char Char
+    wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
+        where solved = fromMaybe sudoku $ map gridString $ solve true <<< fromMaybe [] <<< readNumberGrid $ sudoku
 
--- keys become values
-mapValues :: Map Char Char -> String -> String
-mapValues m str = foldl 
-    (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
-    ""
-    (toCharArray str)
+    -- keys become values
+    mapValues :: Map Char Char -> String -> String
+    mapValues m str = foldl 
+        (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
+        ""
+        (toCharArray str)
 
 generateSudoku :: Boolean -> Difficulty -> Effect String
 generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
