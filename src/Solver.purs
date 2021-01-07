@@ -312,7 +312,7 @@ solveUnique diag grid = toSolution $ solveUnique' diag grid where
         | otherwise       = case nextGrids g of
             Nothing -> Tuple Nothing Nothing
             (Just (Tuple grid1 grid2)) -> case solveUnique' d grid1 of
-                x@(Tuple (Just _) (Just _)) -> x
+                x@(Tuple (Just _) (Just _)) -> solveUnique' d grid2
                 y -> y `fillWith` (solveUnique' d grid2)
 
     toSolution :: Tuple (Maybe Grid) (Maybe Grid) -> Maybe (Either Grid (Tuple Grid Grid))
