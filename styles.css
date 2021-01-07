@@ -5,6 +5,7 @@ body {
 
 h1 {
     font-size: 2.3em;
+    text-align : center;
     color: #333
 }
 
@@ -87,6 +88,22 @@ button:focus {
         height: 80vw;
         font-size: 3.7vw;
     }
+
+    .td:first-child {
+        border-left: solid 3px;
+    }
+
+    .td:nth-child(3n) {
+        border-right: solid 3px;
+    }
+
+    .tr:first-child {
+        border-top: solid 3px;
+    }
+
+    .tr:nth-child(3n) .td { 
+        border-bottom: solid 3px; 
+    }
 }
 
 /* For Desktop */
@@ -95,6 +112,22 @@ button:focus {
         width: 600px;
         height: 600px;
         font-size: 30px;
+    }
+
+    .td:first-child {
+        border-left: solid 4px;
+    }
+
+    .td:nth-child(3n) {
+        border-right: solid 4px;
+    }
+
+    .tr:first-child {
+        border-top: solid 4px;
+    }
+
+    .tr:nth-child(3n) .td { 
+        border-bottom: solid 4px; 
     }
 }
 
@@ -109,14 +142,6 @@ button:focus {
     display: table-row;
 }
 
-.tr:first-child {
-    border-top: solid medium;
-}
-
-.tr:nth-child(3n) .td { 
-    border-bottom: solid medium; 
-}
-
 .td {
     white-space: nowrap;
     overflow: hidden;
@@ -124,20 +149,12 @@ button:focus {
     width: 100%;
     padding-top: 100%; /* 1:1 Aspect Ratio */
     display: table-cell;
-    border: solid thin;
+    border: solid 1px;
     padding: 2px;
     height: 2em;
     width: 2em;
     text-align: center;
     vertical-align: middle;
-}
-
-.td:first-child {
-    border-left:solid medium;
-}
-
-.td:nth-child(3n) {
-    border-right:solid medium;
 }
 
 .Circle{
