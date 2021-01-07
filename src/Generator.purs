@@ -12,7 +12,7 @@ import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (CellSet(..), Cell(..), Grid, mkCellSet, readGrid, readNumberGrid, replace2D, gridString, solve, solveUnique)
+import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, mkCellSet, readGrid, readNumberGrid, replace2D, solve, solveUnique)
 import Wordlist (wordlist)
 
 type Opts = { 
@@ -94,11 +94,11 @@ generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to ge
     where
         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
         reduceBy cs count idxs grid = if count > 64 then Nothing else do
-            lr <- solveUnique restrictDiag grid
+            let result = solveUnique restrictDiag grid
             { head: idx, tail: rands } <- uncons idxs
-            -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
-            case lr of 
-                Left _ -> 
+            case result of
+                -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
+                Unique _ -> 
                     if (count <= 0) 
                     then Just grid
                     -- try removing the next one
@@ -107,7 +107,8 @@ generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to ge
                         Nothing -> reduceBy cs count rands grid
                         Just grid' -> Just grid'
                 -- backtracking won't help if the board doesn't already have a unique solution
-                Right _ -> Nothing
+                (NotUnique _ _) -> Nothing
+                NoSolution -> Nothing
 
         removeAt :: CellSet -> Int -> Grid -> Grid
         removeAt (CellSet _ allValues) idx grid = 

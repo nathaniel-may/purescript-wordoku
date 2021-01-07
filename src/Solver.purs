@@ -290,6 +290,16 @@ solveAll diag grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGridWit
             solveAll diag grid1 <> solveAll diag grid2
         )
 
+data SearchResult
+    = NoSolution
+    | Unique Grid
+    | NotUnique Grid Grid
+
+data Search
+    = NoSolution'
+    | NotUnique' Grid Grid
+    | AtLeast' Grid
+
 {- 
 Takes in a puzzle, determines if it has a solution, and if that solution is unique:
 - Nothing = puzzle has no solution
@@ -299,34 +309,31 @@ Takes in a puzzle, determines if it has a solution, and if that solution is uniq
 To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
 or exit early when it finds a second solution. For a fast single solution use `solve`.
 -} 
-solveUnique :: Boolean -> Grid -> Maybe (Either Grid (Tuple Grid Grid))
-solveUnique diag grid = toSolution $ solveUnique' diag grid where
-    solveUnique' :: Boolean -> Grid -> Tuple (Maybe Grid) (Maybe Grid)
-    solveUnique' d g = fromMaybe (Tuple Nothing Nothing)
+solveUnique :: Boolean -> Grid -> SearchResult
+solveUnique diag grid = searchResult $ solveUnique' diag grid where
+
+    solveUnique' :: Boolean -> Grid -> Search
+    solveUnique' d g = fromMaybe NoSolution'
         $ solve2 d <$> (pruneGridWithDiagConstraint d g)
 
-    solve2 :: Boolean -> Grid -> Tuple (Maybe Grid) (Maybe Grid)
+    solve2 :: Boolean -> Grid -> Search
     solve2 d g
-        | isGridInvalidWithDiagConstraint d g = Tuple Nothing Nothing
-        | isGridFilled g  = Tuple (Just g) Nothing
+        | isGridInvalidWithDiagConstraint d g = NoSolution'
+        | isGridFilled g  = AtLeast' g
         | otherwise       = case nextGrids g of
-            Nothing -> Tuple Nothing Nothing
+            Nothing -> NoSolution'
             (Just (Tuple grid1 grid2)) -> case solveUnique' d grid1 of
-                x@(Tuple (Just _) (Just _)) -> solveUnique' d grid2
-                y -> y `fillWith` (solveUnique' d grid2)
+                (NotUnique' _ _) -> solveUnique' d grid2
+                x -> x `mergeSearch` (solveUnique' d grid2)
 
-    toSolution :: Tuple (Maybe Grid) (Maybe Grid) -> Maybe (Either Grid (Tuple Grid Grid))
-    toSolution (Tuple Nothing  Nothing)  = Nothing
-    toSolution (Tuple (Just x) Nothing)  = Just (Left x)
-    toSolution (Tuple Nothing  (Just y)) = Just (Left y)
-    toSolution (Tuple (Just x) (Just y)) = Just (Right (Tuple x y))
-    
-    fillWith :: Tuple (Maybe Grid) (Maybe Grid) -> Tuple (Maybe Grid) (Maybe Grid) -> Tuple (Maybe Grid) (Maybe Grid)
-    fillWith (Tuple Nothing Nothing) y = y
-    fillWith x (Tuple Nothing Nothing) = x
-    fillWith x@(Tuple (Just _) (Just _)) _ = x
-    fillWith _ y@(Tuple (Just _) (Just _)) = y
-    fillWith (Tuple (Just a) Nothing) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
-    fillWith (Tuple (Just a) Nothing) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
-    fillWith (Tuple Nothing (Just a) ) (Tuple (Just b) Nothing) = (Tuple (Just a) (Just b))
-    fillWith (Tuple Nothing (Just a) ) (Tuple Nothing (Just b)) = (Tuple (Just a) (Just b))
+    searchResult :: Search -> SearchResult
+    searchResult NoSolution' = NoSolution
+    searchResult (NotUnique' s1 s2) = NotUnique s1 s2
+    searchResult (AtLeast' s) = Unique s
+
+    mergeSearch :: Search -> Search -> Search
+    mergeSearch NoSolution' y = y
+    mergeSearch x NoSolution' = x
+    mergeSearch x@(NotUnique' _ _) _ = x
+    mergeSearch _ y@(NotUnique' _ _) = y
+    mergeSearch (AtLeast' s1) (AtLeast' s2) = (NotUnique' s1 s2)
