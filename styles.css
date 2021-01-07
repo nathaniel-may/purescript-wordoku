@@ -80,12 +80,29 @@ button:focus {
     background-color: #cc0000;
 }
 
+/* For Mobile */
+@media screen and (max-width: 610px) {
+    #table {
+        width: 80vw;
+        height: 80vw;
+        font-size: 3.7vw;
+    }
+}
+
+/* For Desktop */
+@media screen and (min-width: 610px) {
+    #table {
+        width: 600px;
+        height: 600px;
+        font-size: 30px;
+    }
+}
+
 #table { 
     display: table;
     margin: 2em auto;
     border-collapse: collapse; 
     font-family: Calibri, sans-serif;
-    font-size: 1.5em;
 }
 
 .tr {
@@ -93,7 +110,7 @@ button:focus {
 }
 
 .tr:first-child {
-    border-top:solid medium;
+    border-top: solid medium;
 }
 
 .tr:nth-child(3n) .td { 
@@ -106,7 +123,6 @@ button:focus {
     text-overflow: ellipsis;
     width: 100%;
     padding-top: 100%; /* 1:1 Aspect Ratio */
-    
     display: table-cell;
     border: solid thin;
     padding: 2px;
