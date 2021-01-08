@@ -14,7 +14,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "install": "bower install",
+    "install": "bower -V install",
     "build": "pulp build && parcel build index.html",
     "develop": "pulp build && parcel index.html",
     "test": "pulp test"
