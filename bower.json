@@ -21,8 +21,7 @@
     "purescript-web-html": "^1.2.0",
     "purescript-halogen": "^4.0.0",
     "purescript-aff": "^5.1.2",
-    "purescript-record": "^1.0.0",
-    "purescript-typelevel-prelude": "^4.0.2"
+    "purescript-record": "^1.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
