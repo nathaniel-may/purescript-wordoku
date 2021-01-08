@@ -44,7 +44,7 @@ button {
     border-radius: 4px;
 }
 
-.disabled {
+button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
@@ -55,10 +55,6 @@ button:focus {
 
 #Generate {
     background-color: #019131;
-}
-
-#Generate:active {
-    background-color: grey;
 }
 
 [name= Beginner] {

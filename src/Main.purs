@@ -2,13 +2,16 @@ module Main where
 
 import Prelude
 
+import Data.Either (Either(..))
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
 import Effect (Effect)
+import Effect.Aff (Canceler, effectCanceler, makeAff, nonCanceler, supervise)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
+import Effect.Exception (Error, error)
 import Generator (Difficulty(..), Game(..), Opts, emptySudoku, generate)
 import Halogen as H
 import Halogen.Aff as HA
@@ -133,7 +136,7 @@ render st =
                     , HP.type_ HP.ButtonButton
                     , HE.onClick (\_ -> Just Generate)
                     ]
-                    [ HH.text "Generate" ]
+                    [ HH.text if st.loading then "working..." else "Generate" ]
                 ]
             , HH.div 
                 [ HP.class_ (H.ClassName "VContainer") ] 
@@ -152,9 +155,10 @@ handleAction = case _ of
         H.modify_ (_ { difficulty = cycle Beginner d })
     Generate -> do
         H.liftEffect $ log "generating..."
-        st <- H.gets identity
-        H.modify_ (_ { displayedGame = st.selectedGame, loading = true })
-        sudoku <- H.liftAff <<< H.liftEffect $ generate (fromState st)
+        st <- H.modify (_ { loading = true })
+        -- sudoku <- H.liftEffect (generate $ fromState st)
+        sudoku <- H.liftAff $ makeAff (\cb -> 
+            map (cb <<< Right) (generate $ fromState st) *> pure mempty)
         H.liftEffect $ log "generated this game:"
         H.liftEffect $ log sudoku
-        H.modify_ (_ { loading = false, puzzle = sudoku })
+        H.modify_ (_ { loading = false, puzzle = sudoku, displayedGame = st.selectedGame })
