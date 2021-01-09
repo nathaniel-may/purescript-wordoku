@@ -148,10 +148,10 @@ randomArray input = do
         pure $ cons v <$> (randomArray arr)
 
 diffNum :: Difficulty -> Int
-diffNum Beginner  = 60
-diffNum Casual    = 50
-diffNum Tricky    = 40
-diffNum Difficult = 30
+diffNum Beginner  = 40
+diffNum Casual    = 34
+diffNum Tricky    = 30
+diffNum Difficult = 26
 diffNum Challenge = 22
 
 emptySudoku :: String
