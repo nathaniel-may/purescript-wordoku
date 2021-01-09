@@ -1,0 +1,91 @@
+body {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    color: #444
+}
+
+h1 {
+    font-size: 2.3em;
+    text-align: center;
+    color: #333
+}
+
+.VContainer {
+    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+    display: -ms-flexbox;      /* TWEENER - IE 10 */
+    display: -webkit-flex;     /* NEW - Chrome */
+    display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+    flex-direction: vertical;
+    justify-content: center;
+}
+
+.HContainer {
+    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
+    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
+    display: -ms-flexbox;      /* TWEENER - IE 10 */
+    display: -webkit-flex;     /* NEW - Chrome */
+    display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
+    flex-direction: horizontal;
+    justify-content: center;
+}
+
+button {
+    visibility: hidden;
+}
+
+#table { 
+    width: 600px;
+    height: 600px;
+    font-size: 30px;
+    display: table;
+    margin: 2em auto;
+    border-collapse: collapse; 
+    font-family: Calibri, sans-serif;
+}
+
+.tr {
+    display: table-row;
+}
+
+.tr:first-child {
+    border-top: solid 4px;
+}
+
+.tr:nth-child(3n) .td { 
+    border-bottom: solid 4px; 
+}
+
+.td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    padding-top: 100%; /* 1:1 Aspect Ratio */
+    display: table-cell;
+    border: solid 1px;
+    padding: 2px;
+    height: 2em;
+    width: 2em;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.td:first-child {
+    border-left: solid 4px;
+}
+
+.td:nth-child(3n) {
+    border-right: solid 4px;
+}
+
+.Circle{
+    background-color: white;
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: 50%;
+    border: none;
+    color: #000;
+    line-height: 50px;
+    text-align: center
+}
