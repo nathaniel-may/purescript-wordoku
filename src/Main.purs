@@ -3,7 +3,7 @@ module Main where
 import Prelude
 
 import Data.Enum (class Enum, succ)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
 import Effect (Effect)
@@ -26,12 +26,10 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 type State =
-    { restrictDiag  :: Boolean
-    , selectedGame  :: Game
-    , displayedGame :: Game
-    , difficulty    :: Difficulty
-    , loading       :: Boolean
-    , puzzle        :: String 
+    { selected     :: { d :: Difficulty, g :: Game }
+    , displayed    :: Maybe { d :: Difficulty, g :: Game }
+    , loading      :: Boolean
+    , puzzle       :: String 
     }
 
 data Action 
@@ -49,19 +47,17 @@ component =
 
 initialState :: ∀ i. i -> State
 initialState _ = 
-    { restrictDiag: false
-    , selectedGame: Wordoku
-    , displayedGame: Wordoku
-    , difficulty: Tricky
+    { selected: { d: Tricky, g: Wordoku }
+    , displayed: Nothing
     , loading: false
     , puzzle: emptySudoku 
     }
 
 fromState :: State -> Opts
 fromState st = 
-    { restrictDiag: (st.selectedGame == Wordoku)
-    , values: st.selectedGame
-    , difficulty: st.difficulty 
+    { restrictDiag: (st.selected.g == Wordoku)
+    , values: st.selected.g
+    , difficulty: st.selected.d
     }
 
 cycle :: ∀ a. Enum a => a -> a -> a
@@ -103,6 +99,13 @@ tableFrom game s = case game of
         mkTable :: Array (Array (HTML a b)) -> HTML a b
         mkTable = HH.div [ HP.id_ "table" ] <<< map (HH.div [ HP.class_ $ H.ClassName "tr" ])
 
+puzzleLabel :: ∀ a b. State -> HTML a b
+puzzleLabel st = HH.div_ [ HH.label [ HP.id_ "label" ] [ HH.text (label st.displayed) ] ] where
+    
+    label :: Maybe { d :: Difficulty, g :: Game } -> String
+    label Nothing   = ""
+    label (Just dg) = show dg.d <> " " <> show dg.g
+
 render :: ∀ a. State -> HTML a Action
 render st =
     HH.div
@@ -115,15 +118,15 @@ render st =
                 [ HP.class_ (H.ClassName "HContainer") ]
                 [ HH.button
                     [ HP.type_ HP.ButtonButton
-                    , HP.name (show st.difficulty)
-                    , HE.onClick (\_ -> Just $ NextDifficulty st.difficulty)
+                    , HP.name (show st.selected.d)
+                    , HE.onClick (\_ -> Just $ NextDifficulty st.selected.d)
                     ]
-                    [ HH.text (show st.difficulty) ]
+                    [ HH.text (show st.selected.d) ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
-                    , HE.onClick (\_ -> Just $ NextGame st.selectedGame)
+                    , HE.onClick (\_ -> Just $ NextGame st.selected.g)
                     ]
-                    [ HH.text (show st.selectedGame) ]
+                    [ HH.text (show st.selected.g) ]
                 ]
             , HH.div
                 [ HP.class_ (H.ClassName "VContainer") ] 
@@ -136,8 +139,10 @@ render st =
                     [ HH.text "Generate" ]
                 ]
             , HH.div 
-                [ HP.class_ (H.ClassName "VContainer") ] 
-                [ tableFrom st.displayedGame st.puzzle ]
+                [ HP.class_ (H.ClassName "label") ] 
+                [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle 
+                , puzzleLabel st
+                ]
             ]
         ]
 
@@ -146,14 +151,14 @@ handleAction = case _ of
     NextGame g -> do
         let selected = cycle Sudoku g
         H.liftEffect <<< log $ "game changed to " <> show selected
-        H.modify_ (_ { selectedGame = selected })
+        H.modify_ (_ { selected { g = selected } })
     NextDifficulty d -> do
         H.liftEffect <<< log $ "difficulty changed to " <> show d
-        H.modify_ (_ { difficulty = cycle Beginner d })
+        H.modify_ (_ { selected { d = cycle Beginner d } })
     Generate -> do
         H.liftEffect $ log "generating..."
         st <- H.gets identity
-        H.modify_ (_ { displayedGame = st.selectedGame, loading = true })
+        H.modify_ (_ { displayed = Just st.selected, loading = true })
         sudoku <- H.liftAff <<< H.liftEffect $ generate (fromState st)
         H.liftEffect $ log "generated this game:"
         H.liftEffect $ log sudoku

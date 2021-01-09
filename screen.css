@@ -29,6 +29,10 @@ h1 {
     justify-content: center;
 }
 
+.label {
+    text-align: center;
+}
+
 button {
     background-color: rgb(152, 0, 182);
     color: white;
@@ -104,6 +108,10 @@ button:focus {
     .tr:nth-child(3n) .td { 
         border-bottom: solid 3px; 
     }
+
+    .label {
+        font-size: 16px;
+    }
 }
 
 /* For Desktop */
@@ -129,11 +137,16 @@ button:focus {
     .tr:nth-child(3n) .td { 
         border-bottom: solid 4px; 
     }
+
+    .label {
+        font-size: 20px;
+    }
 }
 
 #table { 
     display: table;
     margin: 2em auto;
+    margin-bottom: 25px;
     border-collapse: collapse; 
     font-family: Calibri, sans-serif;
 }
