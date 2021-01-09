@@ -2,13 +2,17 @@ module Main where
 
 import Prelude
 
+import Data.DateTime (diff)
+import Data.DateTime.Instant (toDateTime)
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
+import Data.Time.Duration (Milliseconds)
 import Effect (Effect)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
+import Effect.Now (now)
 import Generator (Difficulty(..), Game(..), Opts, emptySudoku, generate)
 import Halogen as H
 import Halogen.Aff as HA
@@ -26,10 +30,10 @@ main = HA.runHalogenAff do
   runUI component unit body
 
 type State =
-    { selected     :: { d :: Difficulty, g :: Game }
-    , displayed    :: Maybe { d :: Difficulty, g :: Game }
-    , loading      :: Boolean
-    , puzzle       :: String 
+    { selected  :: { d :: Difficulty, g :: Game }
+    , displayed :: Maybe { d :: Difficulty, g :: Game }
+    , loading   :: Boolean
+    , puzzle    :: String 
     }
 
 data Action 
@@ -154,7 +158,9 @@ handleAction = case _ of
         st <- H.get
         H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
         H.modify_ (_ { displayed = Just st.selected, loading = true })
+        start <- H.liftEffect $ map toDateTime now
         sudoku <- H.liftAff <<< H.liftEffect <<< generate $ fromState st
-        H.liftEffect $ log "generated this game:"
+        end <- H.liftEffect $ map toDateTime now
+        H.liftEffect <<< log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
         H.liftEffect $ log sudoku
         H.modify_ (_ { loading = false, puzzle = sudoku })

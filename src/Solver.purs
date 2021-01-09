@@ -9,7 +9,7 @@ module Solver where
 import Prelude
 
 import Control.Bind (bindFlipped)
-import Data.Array (all, any, concat, cons, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (:), (..))
+import Data.Array (all, any, concat, cons, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (..))
 import Data.Array as Array
 import Data.Either (Either(..), hush)
 import Data.Foldable (foldl, minimumBy)
