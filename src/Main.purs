@@ -148,18 +148,13 @@ render st =
 
 handleAction :: ∀ o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
-    NextGame g -> do
-        let selected = cycle Sudoku g
-        H.liftEffect <<< log $ "game changed to " <> show selected
-        H.modify_ (_ { selected { g = selected } })
-    NextDifficulty d -> do
-        H.liftEffect <<< log $ "difficulty changed to " <> show d
-        H.modify_ (_ { selected { d = cycle Beginner d } })
+    NextGame g -> H.modify_ (_ { selected { g = cycle Sudoku g } })
+    NextDifficulty d -> H.modify_ (_ { selected { d = cycle Beginner d } })
     Generate -> do
-        H.liftEffect $ log "generating..."
-        st <- H.gets identity
+        st <- H.get
+        H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
         H.modify_ (_ { displayed = Just st.selected, loading = true })
-        sudoku <- H.liftAff <<< H.liftEffect $ generate (fromState st)
+        sudoku <- H.liftAff <<< H.liftEffect <<< generate $ fromState st
         H.liftEffect $ log "generated this game:"
         H.liftEffect $ log sudoku
         H.modify_ (_ { loading = false, puzzle = sudoku })
