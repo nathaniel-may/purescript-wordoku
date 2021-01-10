@@ -4,12 +4,14 @@ import Prelude
 
 import Data.DateTime (diff)
 import Data.DateTime.Instant (toDateTime)
+import Data.Either (Either(..))
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
-import Data.Time.Duration (Milliseconds)
+import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
+import Effect.Aff (Aff, delay, effectCanceler, makeAff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Effect.Now (now)
@@ -23,6 +25,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Lib (chunksOf)
+
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -140,7 +143,7 @@ render st =
                     , HP.type_ HP.ButtonButton
                     , HE.onClick (\_ -> Just Generate)
                     ]
-                    [ HH.text "Generate" ]
+                    [ HH.text if st.loading then "Working..." else "Generate" ]
                 ]
             , HH.div 
                 [ HP.class_ (H.ClassName "label") ] 
@@ -157,10 +160,14 @@ handleAction = case _ of
     Generate -> do
         st <- H.get
         H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
-        H.modify_ (_ { displayed = Just st.selected, loading = true })
+        H.modify_ (_ { loading = true })
         start <- H.liftEffect $ map toDateTime now
-        sudoku <- H.liftAff <<< H.liftEffect <<< generate $ fromState st
+        sudoku <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
+            val <- generate $ fromState st
+            _   <- cb (Right val)
+            pure mempty)
         end <- H.liftEffect $ map toDateTime now
+        H.modify_ (_ { displayed = Just st.selected, loading = false, puzzle = sudoku })
         H.liftEffect <<< log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
         H.liftEffect $ log sudoku
-        H.modify_ (_ { loading = false, puzzle = sudoku })
+
