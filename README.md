@@ -14,11 +14,7 @@ Difficulty levels map to a fixed number of starting cells:
 
 All puzzles with the exception of colorkus can be printed directly through the browser by using the browser's print function. The provided `print.css` will remove buttons.
 
-![](./screenshots/wordoku.png)
-
-![](./screenshots/colorku.png)
-
-![](./screenshots/sudoku.png)
+![](./screenshots/all.png)
 
 ## Dev
 To install all PureScript dev env dependencies: (only needs to be run once)
