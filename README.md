@@ -51,4 +51,6 @@ Test locally and push to main. Netlify will build with the npm build script and 
 
 ## Future work
 - Use web workers to generate puzzles so the UI doesn't freeze up. Most puzzles are generated in less than a second but challenge puzzles often take 10 seconds or longer to generate.
+- Add CI
+- Add more tests
 - Allow for printing colorkus.
