@@ -12,6 +12,8 @@ Difficulty levels map to a fixed number of starting cells:
 | Difficult | 26               |
 | Challenge | 22               |
 
+All puzzles with the exception of colorkus can be printed directly through the browser by using the browser's print function. The provided `print.css` will remove buttons.
+
 ![](./screenshots/wordoku.png)
 
 ![](./screenshots/colorku.png)
@@ -53,3 +55,4 @@ Test locally and push to main. Netlify will build with the npm build script and 
 
 ## Future work
 - Use web workers to generate puzzles so the UI doesn't freeze up. Most puzzles are generated in less than a second but challenge puzzles often take 10 seconds or longer to generate.
+- Allow for printing colorkus.
