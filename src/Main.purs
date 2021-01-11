@@ -11,7 +11,7 @@ import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (Aff, delay, effectCanceler, makeAff)
+import Effect.Aff (delay, effectCanceler, makeAff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Effect.Now (now)
@@ -165,7 +165,7 @@ handleAction = case _ of
         sudoku <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
             val <- generate $ fromState st
             _   <- cb (Right val)
-            pure mempty)
+            pure <<< effectCanceler $ log "generation canceled")
         end <- H.liftEffect $ map toDateTime now
         H.modify_ (_ { displayed = Just st.selected, loading = false, puzzle = sudoku })
         H.liftEffect <<< log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
