@@ -331,7 +331,7 @@ solveUnique diag grid = searchResult $ solveUnique' diag grid where
         | otherwise       = case nextGrids g of
             Nothing -> NoSolution'
             (Just (Tuple grid1 grid2)) -> case solveUnique' d grid1 of
-                (NotUnique' _ _) -> solveUnique' d grid2
+                x@(NotUnique' _ _) -> x
                 x -> x `mergeSearch` (solveUnique' d grid2)
 
     searchResult :: Search -> SearchResult
