@@ -2,7 +2,7 @@ module Generator where
 
 import Prelude
 
-import Data.Array (cons, deleteAt, elem, index, foldl, length, replicate, uncons, zip, (..))
+import Data.Array (cons, deleteAt, drop, elem, index, foldl, length, replicate, take, uncons, zip, (..))
 import Data.Enum (class Enum)
 import Data.Map (Map)
 import Data.Map as Map
@@ -11,7 +11,7 @@ import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
+import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, index2D, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
 import Wordlist (wordlist)
 
 type Opts = { 
@@ -68,7 +68,7 @@ generate = generate' where
             pure $ mapValues (wordMap w g) g
 
     game :: Opts -> Effect String
-    game opts = generateSudoku opts.restrictDiag opts.difficulty
+    game opts = generateSudoku2 opts.restrictDiag opts.difficulty
 
     wordMap :: String -> String -> Map Char Char
     wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
@@ -81,37 +81,68 @@ generate = generate' where
         ""
         (toCharArray str)
 
-generateSudoku :: Boolean -> Difficulty -> Effect String
-generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
-    cellSet <- mixCellSet numbers
-    let mFilled = solve restrictDiag =<< (readGrid cellSet emptySudoku)
-    randIdxs <- randomArray (0..80)
-    pure $ (reduceBy cellSet (81 - diffNum difficulty) randIdxs) =<< mFilled 
-    where
-        reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
-        reduceBy cs count idxs grid = if count > 64 then Nothing else do
-            let result = solveUnique restrictDiag grid
-            { head: idx, tail: rands } <- uncons idxs
-            case result of
-                -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
-                Unique _ -> 
-                    if (count <= 0) 
-                    then Just grid
-                    -- try removing the next one
-                    else case reduceBy cs (count - 1) rands (removeAt cs idx grid) of
-                        -- backtrack
-                        Nothing -> reduceBy cs count rands grid
-                        Just grid' -> Just grid'
-                -- backtracking won't help if the board doesn't already have a unique solution
-                (NotUnique _ _) -> Nothing
-                NoSolution -> Nothing
+-- generateSudoku :: Boolean -> Difficulty -> Effect String
+-- generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
+--     cellSet <- mixCellSet numbers
+--     let mFilled = solve restrictDiag =<< (readGrid cellSet emptySudoku)
+--     randIdxs <- randomArray (0..80)
+--     pure $ (reduceBy cellSet (81 - diffNum difficulty) randIdxs) =<< mFilled 
+--     where
+--         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
+--         reduceBy cs count idxs grid = if count > 64 then Nothing else do
+--             let result = solveUnique restrictDiag grid
+--             { head: idx, tail: rands } <- uncons idxs
+--             case result of
+--                 -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
+--                 Unique _ -> 
+--                     if (count <= 0) 
+--                     then Just grid
+--                     -- try removing the next one
+--                     else case reduceBy cs (count - 1) rands (removeAt cs idx grid) of
+--                         -- backtrack
+--                         Nothing -> reduceBy cs count rands grid
+--                         Just grid' -> Just grid'
+--                 -- backtracking won't help if the board doesn't already have a unique solution
+--                 (NotUnique _ _) -> Nothing
+--                 NoSolution -> Nothing
 
-        removeAt :: CellSet -> Int -> Grid -> Grid
-        removeAt (CellSet _ allValues) idx grid = 
-            replace2D idx (Possible allValues) grid
+--         removeAt :: CellSet -> Int -> Grid -> Grid
+--         removeAt (CellSet _ allValues) idx grid = 
+--             replace2D idx (Possible allValues) grid
+        
+--         toStringOrLoop :: Maybe Grid -> Effect String
+--         toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
+--         toStringOrLoop (Just grid) = pure $ gridString grid
+
+generateSudoku2 :: Boolean -> Difficulty -> Effect String
+generateSudoku2 restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
+    cellSet <- mixCellSet numbers
+    let mEmpty = readGrid cellSet emptySudoku
+    let mSolved = solve restrictDiag =<< mEmpty
+    randIdxs <- randomArray (0..80)
+    pure $ do
+        empty <- mEmpty
+        solved <- mSolved
+        keepOnly (diffNum difficulty) randIdxs empty solved
+    where
+        keepOnly :: Int -> Array Int -> Grid -> Grid -> Maybe Grid
+        keepOnly count idxs empty solved = 
+            if length idxs < count
+            then Nothing
+            else case solveUnique restrictDiag start of
+                Unique grid -> Just start
+                _ -> keepOnly count (drop 1 idxs) empty solved
+            where 
+                start :: Grid
+                start = foldl (\grid idx -> keep idx grid solved) empty (take count idxs)
+
+        keep :: Int -> Grid -> Grid -> Grid
+        keep idx grid solved = fromMaybe grid $ do
+            keeping <- index2D solved idx
+            pure $ replace2D idx keeping grid
         
         toStringOrLoop :: Maybe Grid -> Effect String
-        toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
+        toStringOrLoop Nothing = generateSudoku2 restrictDiag difficulty
         toStringOrLoop (Just grid) = pure $ gridString grid
 
 diagonalOf :: String -> String
