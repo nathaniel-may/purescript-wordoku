@@ -3,21 +3,25 @@ module Test.Main where
 import Prelude
 
 import Data.Array (elem, foldl)
-import Data.Either (hush)
+import Data.Either (Either(..), hush)
 import Data.Maybe (fromMaybe)
 import Data.Traversable (traverse)
 import Effect (Effect)
+import Effect.Aff (Aff, runAff_)
 import Generator (Difficulty(..), Game(..), generate)
 import Solver (cellSetFromPuzzle, diagonalOf, readGrid, solve)
-import Test.QuickCheck (Result, quickCheck, (<?>))
+import Test.QuickCheck (class Testable, Result, quickCheck, (<?>))
 import Wordlist (wordlist)
 
 main :: Effect Unit
-main = do 
-    t1 <- test1
-    void $ traverse quickCheck [t1]
+main = void $ traverse quickCheckAff [test1]
 
-test1 :: Effect Result
+quickCheckAff :: forall prop. Testable prop => Aff prop -> Effect Unit
+quickCheckAff = runAff_ (\e -> case e of 
+    Left _ -> pure unit
+    Right result -> quickCheck result)
+
+test1 :: Aff Result
 test1 = do
     str <- generate { difficulty: Beginner, restrictDiag: true, values: Wordoku }
     -- solved relies on all 9 characters being present in the generated puzzle. (not given)

@@ -11,7 +11,9 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
+import Effect.Aff (Aff, forkAff, joinFiber)
 import Effect.Random (randomInt)
+import Lib (mkAff, sequenceJoin)
 import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, mkCellSet, readGrid, readNumberGrid, replace2D, solve, solveUnique)
 import Wordlist (wordlist)
 
@@ -56,19 +58,21 @@ instance showDifficulty :: Show Difficulty where
     show Difficult = "Difficult"
     show Challenge = "Challenge"
 
-generate :: Opts -> Effect String
+generate :: Opts -> Aff String
 generate = generate' where
 
-    generate' :: Opts -> Effect String
+    generate' :: Opts -> Aff String
     generate' opts = case opts.values of
         Sudoku  -> game opts
         Colorku -> mapValues (Map.fromFoldable $ numbers `zip` colors) <$> game opts
         Wordoku -> do
-            g <- game opts
-            w <- randomWord unit
+            fiberG <- forkAff $ game opts
+            fiberW <- forkAff <<< mkAff $ randomWord unit
+            g <- joinFiber fiberG
+            w <- joinFiber fiberW
             pure $ mapValues (wordMap w g) g
 
-    game :: Opts -> Effect String
+    game :: Opts -> Aff String
     game opts = generateSudoku opts.restrictDiag opts.difficulty
 
     wordMap :: String -> String -> Map Char Char
@@ -82,39 +86,51 @@ generate = generate' where
         ""
         (toCharArray str)
 
-generateSudoku :: Boolean -> Difficulty -> Effect String
+generateSudoku :: Boolean -> Difficulty -> Aff String
 generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
-    mCellSet <- hush <<< mkCellSet '.' <$> randomArray numbers
+    fiberA <- forkAff <<< mkAff $ randomArray numbers
+    fiberB <- forkAff <<< mkAff $ randomArray (0..80)
+    randNums <- joinFiber fiberA
+    randIdxs <- joinFiber fiberB
+    let mCellSet = hush $ mkCellSet '.' randNums
     let mFilled = solve restrictDiag =<< ((\set -> readGrid set emptySudoku) =<< mCellSet)
-    randIdxs <- randomArray (0..80)
-    pure $ do
+    sequenceJoin $ do
         cs <- mCellSet
         filled <- mFilled
-        reduceBy cs (81 - diffNum difficulty) randIdxs filled
+        pure $ reduceBy cs (81 - diffNum difficulty) randIdxs filled
     where
-        reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
-        reduceBy cs count idxs grid = if count > 64 then Nothing else do
-            let result = solveUnique restrictDiag grid
-            { head: idx, tail: rands } <- uncons idxs
-            case result of
-                -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
-                Unique _ -> 
-                    if (count <= 0) 
-                    then Just grid
-                    -- try removing the next one
-                    else case reduceBy cs (count - 1) rands (removeAt cs idx grid) of
-                        -- backtrack
-                        Nothing -> reduceBy cs count rands grid
-                        Just grid' -> Just grid'
-                -- backtracking won't help if the board doesn't already have a unique solution
-                (NotUnique _ _) -> Nothing
-                NoSolution -> Nothing
+        reduceBy :: CellSet -> Int -> Array Int -> Grid -> Aff (Maybe Grid)
+        reduceBy cs count idxs grid = if count > 64 then pure Nothing else reduced
+            where
+                reduced :: Aff (Maybe Grid)
+                reduced = sequenceJoin $ map (\ht -> next ht.head ht.tail result) (uncons idxs)
+
+                result :: SearchResult
+                result = solveUnique restrictDiag grid
+
+                next :: Int -> Array Int -> SearchResult -> Aff (Maybe Grid)
+                next idx rands result = case result of
+                    -- backtracking won't help if the board doesn't already have a unique solution
+                    (NotUnique _ _) -> pure Nothing
+                    NoSolution      -> pure Nothing
+                    -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
+                    Unique _ -> 
+                        if (count <= 0) 
+                        then pure $ Just grid
+                        -- try removing the next one
+                        else (backtrack rands) =<< (reduceBy cs (count - 1) rands (removeAt cs idx grid))
+
+                backtrack :: Array Int -> Maybe Grid -> Aff (Maybe Grid)
+                backtrack rands mGrid = case mGrid of
+                    Nothing    -> reduceBy cs count rands grid
+                    y@(Just _) -> pure y
+
 
         removeAt :: CellSet -> Int -> Grid -> Grid
         removeAt (CellSet _ allValues) idx grid = 
             replace2D idx (Possible allValues) grid
         
-        toStringOrLoop :: Maybe Grid -> Effect String
+        toStringOrLoop :: Maybe Grid -> Aff String
         toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
         toStringOrLoop (Just grid) = pure $ gridString grid
 

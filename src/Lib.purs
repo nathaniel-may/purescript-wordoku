@@ -3,10 +3,15 @@ module Lib where
 import Prelude
 import Data.Array (cons, drop, null, take, uncons, (:))
 import Data.Array as Array
+import Data.Either (Either(..))
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Foldable (foldl)
+import Data.Traversable (class Traversable, sequence)
+import Effect (Effect)
+import Effect.Aff (Aff, effectCanceler, makeAff)
+import Effect.Console (log)
 
 
 data Tuple3 a b c = Tuple3 a b c
@@ -46,3 +51,9 @@ zip3 f as bs cs = case Tuple3 (uncons as) (uncons bs) (uncons cs) of
 
 on :: ∀ a b c. (b -> b -> c) -> (a -> b) -> a -> a -> c
 on g f = \x y -> g (f x) (f y)
+
+mkAff :: ∀ a. Effect a -> Aff a
+mkAff x = makeAff \cb -> (bind x $ cb <<< Right) *> pure mempty
+
+sequenceJoin :: ∀ m f a. Monad m => Traversable m => Applicative f => m (f (m a)) -> f (m a)
+sequenceJoin x = map join (sequence x)
