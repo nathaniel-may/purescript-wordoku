@@ -3,7 +3,6 @@ module Generator where
 import Prelude
 
 import Data.Array (cons, deleteAt, elem, index, foldl, length, replicate, uncons, zip, (..))
-import Data.Either (hush)
 import Data.Enum (class Enum)
 import Data.Map (Map)
 import Data.Map as Map
@@ -12,7 +11,7 @@ import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, mkCellSet, readGrid, readNumberGrid, replace2D, solve, solveUnique)
+import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
 import Wordlist (wordlist)
 
 type Opts = { 
@@ -62,7 +61,7 @@ generate = generate' where
     generate' :: Opts -> Effect String
     generate' opts = case opts.values of
         Sudoku  -> game opts
-        Colorku -> mapValues (Map.fromFoldable $ numbers `zip` colors) <$> game opts
+        Colorku -> mapValues (Map.fromFoldable $ numChars `zip` colorChars) <$> game opts
         Wordoku -> do
             g <- game opts
             w <- randomWord unit
@@ -84,13 +83,10 @@ generate = generate' where
 
 generateSudoku :: Boolean -> Difficulty -> Effect String
 generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
-    mCellSet <- hush <<< mkCellSet '.' <$> randomArray numbers
-    let mFilled = solve restrictDiag =<< ((\set -> readGrid set emptySudoku) =<< mCellSet)
+    cellSet <- mixCellSet numbers
+    let mFilled = solve restrictDiag =<< (readGrid cellSet emptySudoku)
     randIdxs <- randomArray (0..80)
-    pure $ do
-        cs <- mCellSet
-        filled <- mFilled
-        reduceBy cs (81 - diffNum difficulty) randIdxs filled
+    pure $ (reduceBy cellSet (81 - diffNum difficulty) randIdxs) =<< mFilled 
     where
         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
         reduceBy cs count idxs grid = if count > 64 then Nothing else do
@@ -127,11 +123,14 @@ diagonalOf str = foldl onlyDiag "" $ toCharArray str `zip` (0..80) where
     idxs :: Array Int
     idxs = map (\x -> 10 * x) (0..8)
 
-numbers :: Array Char
-numbers = ['1','2','3','4','5','6','7','8','9']
+mixCellSet :: CellSet -> Effect CellSet
+mixCellSet (CellSet empty xs) = map (CellSet empty) (randomArray xs)
 
-colors :: Array Char
-colors = ['R','O','Y','L','G','B','I','P','V']
+numChars :: Array Char
+numChars = ['1','2','3','4','5','6','7','8','9']
+
+colorChars :: Array Char
+colorChars = ['R','O','Y','L','G','B','I','P','V']
 
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail

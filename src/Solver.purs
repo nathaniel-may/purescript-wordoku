@@ -46,6 +46,14 @@ instance cellShow :: Show Cell where
 type Row = Array Cell
 type Grid = Array Row
 
+-- does not use smart constructor
+numbers :: CellSet
+numbers = (CellSet '.' ['1','2','3','4','5','6','7','8','9'])
+
+-- does not use smart constructor
+colors :: CellSet
+colors = (CellSet '.' ['R','O','Y','L','G','B','I','P','V'])
+
 isPossible :: Cell -> Boolean
 isPossible (Possible _) = true
 isPossible _            = false
