@@ -3,9 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-        - image: circleci/node:10.15-browsers
-    environment:
-        RTS_ARGS: +RTS -N2 -RTS
+        - image: codenoodle/purescript
     steps:
     - checkout
     - restore_cache:
