@@ -13,7 +13,7 @@ jobs:
         key: purescript-wordoku-dependencies-{{ checksum "package.json" }}-{{ checksum "bower.json" }}
     - run:
         name: Install Dev Dependencies
-        command: npm install
+        command: npm install --unsafe-perm=true --allow-root
     - run:
         name: Update App Dependencies
         command: npm run-script install
