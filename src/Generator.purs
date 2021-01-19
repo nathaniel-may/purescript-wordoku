@@ -57,16 +57,14 @@ instance showDifficulty :: Show Difficulty where
     show Challenge = "Challenge"
 
 generate :: Opts -> Effect String
-generate = generate' where
-
-    generate' :: Opts -> Effect String
-    generate' opts = case opts.values of
-        Sudoku  -> game opts
-        Colorku -> mapValues (Map.fromFoldable $ numChars `zip` colorChars) <$> game opts
-        Wordoku -> do
-            g <- game opts
-            w <- randomWord unit
-            pure $ mapValues (wordMap w g) g
+generate opts = case opts.values of
+    Sudoku  -> game opts
+    Colorku -> mapValues (Map.fromFoldable $ numChars `zip` colorChars) <$> game opts
+    Wordoku -> do
+        g <- game opts
+        w <- randomWord unit
+        pure $ mapValues (wordMap w g) g
+    where
 
     game :: Opts -> Effect String
     game opts = generateSudoku opts.variant opts.difficulty
