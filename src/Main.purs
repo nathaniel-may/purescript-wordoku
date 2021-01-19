@@ -25,6 +25,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Lib (chunksOf)
+import Solver (Variant(..))
 
 
 main :: Effect Unit
@@ -62,7 +63,7 @@ initialState _ =
 
 fromState :: State -> Opts
 fromState st = 
-    { restrictDiag: (st.selected.g == Wordoku)
+    { variant: if st.selected.g == Wordoku then UniqueDiagonal else Standard
     , values: st.selected.g
     , difficulty: st.selected.d
     }

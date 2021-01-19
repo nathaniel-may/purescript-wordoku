@@ -11,13 +11,13 @@ import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
+import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
 import Wordlist (wordlist)
 
 type Opts = { 
-      restrictDiag :: Boolean 
-    , values       :: Game
-    , difficulty   :: Difficulty }
+      variant    :: Variant 
+    , values     :: Game
+    , difficulty :: Difficulty }
 
 data Game = Sudoku | Wordoku | Colorku
 derive instance valuesEq :: Eq Game
@@ -68,11 +68,11 @@ generate = generate' where
             pure $ mapValues (wordMap w g) g
 
     game :: Opts -> Effect String
-    game opts = generateSudoku opts.restrictDiag opts.difficulty
+    game opts = generateSudoku opts.variant opts.difficulty
 
     wordMap :: String -> String -> Map Char Char
     wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
-        where solved = fromMaybe sudoku $ map gridString $ solve true <<< fromMaybe [] <<< readNumberGrid $ sudoku
+        where solved = fromMaybe sudoku $ map gridString $ solve UniqueDiagonal <<< fromMaybe [] <<< readNumberGrid $ sudoku
 
     -- keys become values
     mapValues :: Map Char Char -> String -> String
@@ -81,7 +81,7 @@ generate = generate' where
         ""
         (toCharArray str)
 
-generateSudoku :: Boolean -> Difficulty -> Effect String
+generateSudoku :: Variant -> Difficulty -> Effect String
 generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
     cellSet <- mixCellSet numbers
     let mFilled = solve restrictDiag =<< (readGrid cellSet emptySudoku)

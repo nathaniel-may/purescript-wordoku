@@ -46,6 +46,8 @@ instance cellShow :: Show Cell where
 type Row = Array Cell
 type Grid = Array Row
 
+data Variant = Standard | UniqueDiagonal
+
 -- does not use smart constructor
 numbers :: CellSet
 numbers = (CellSet '.' ['1','2','3','4','5','6','7','8','9'])
@@ -188,8 +190,8 @@ pruneGrid' grid =
     -- make subgrids rows, prune and replace
     >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
 
-pruneGridWithDiagConstraint' :: Grid -> Maybe Grid
-pruneGridWithDiagConstraint' grid = pruneDiag =<< pruneGrid' grid where
+pruneGridWithUniqueDiagonal' :: Grid -> Maybe Grid
+pruneGridWithUniqueDiagonal' grid = pruneDiag =<< pruneGrid' grid where
     
     pruneDiag :: Grid -> Maybe Grid
     pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
@@ -200,9 +202,9 @@ diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
 replaceDiagonal :: Row -> Grid -> Grid
 replaceDiagonal row grid = foldl (\grid' (Tuple cell i) -> replace2D i cell grid') grid (row `zip` diagIdxs)
 
-pruneGridWithDiagConstraint :: Boolean -> Grid -> Maybe Grid
-pruneGridWithDiagConstraint true = fixM pruneGridWithDiagConstraint'
-pruneGridWithDiagConstraint false = fixM pruneGrid'
+pruneGridWithVariant :: Variant -> Grid -> Maybe Grid
+pruneGridWithVariant UniqueDiagonal = fixM pruneGridWithUniqueDiagonal'
+pruneGridWithVariant Standard = fixM pruneGrid'
 
 fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
 fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
@@ -266,36 +268,36 @@ isGridInvalid' grid = any isInvalidRow grid
   || any isInvalidRow (transpose grid)
   || any isInvalidRow (subGridsToRows grid)
 
-isGridInvalidWithDiagConstraint :: Boolean -> Grid -> Boolean
-isGridInvalidWithDiagConstraint true grid = isInvalidRow (diagonalOf grid) || isGridInvalid' grid
-isGridInvalidWithDiagConstraint false grid = isGridInvalid' grid
+isGridInvalidWithVariant :: Variant -> Grid -> Boolean
+isGridInvalidWithVariant UniqueDiagonal grid = isInvalidRow (diagonalOf grid) || isGridInvalid' grid
+isGridInvalidWithVariant Standard grid = isGridInvalid' grid
 
 {- 
 Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
 -} 
-solve :: Boolean -> Grid -> Maybe Grid
-solve diag grid = solve' =<< (pruneGridWithDiagConstraint diag $ grid) where
+solve :: Variant -> Grid -> Maybe Grid
+solve v grid = solve' =<< (pruneGridWithVariant v $ grid) where
     solve' g
-      | isGridInvalidWithDiagConstraint diag g = Nothing
+      | isGridInvalidWithVariant v g = Nothing
       | isGridFilled g  = Just g
       | otherwise       = nextGrids g >>= (\(Tuple grid1 grid2) -> 
-            case solve diag grid1 of
+            case solve v grid1 of
                 solution@(Just _) -> solution
-                _ -> solve diag grid2
+                _ -> solve v grid2
         )
 
 {- 
 Takes in a puzzle and finds all solutions.
 -} 
-solveAll :: Boolean -> Grid -> Array Grid
-solveAll diag grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGridWithDiagConstraint diag $ grid) where
+solveAll :: Variant -> Grid -> Array Grid
+solveAll v grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGridWithVariant v $ grid) where
     solveAll' :: Grid -> Array Grid
     solveAll' g
-      | isGridInvalidWithDiagConstraint diag g = []
+      | isGridInvalidWithVariant v g = []
       | isGridFilled g  = [g]
-      | otherwise       = 
+      | otherwise = 
         concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) -> 
-            solveAll diag grid1 <> solveAll diag grid2
+            solveAll v grid1 <> solveAll v grid2
         )
 
 data SearchResult
@@ -317,22 +319,22 @@ Takes in a puzzle, determines if it has a solution, and if that solution is uniq
 To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
 or exit early when it finds a second solution. For a fast single solution use `solve`.
 -} 
-solveUnique :: Boolean -> Grid -> SearchResult
-solveUnique diag grid = searchResult $ solveUnique' diag grid where
+solveUnique :: Variant -> Grid -> SearchResult
+solveUnique v grid = searchResult $ solveUnique' v grid where
 
-    solveUnique' :: Boolean -> Grid -> Search
-    solveUnique' d g = fromMaybe NoSolution'
-        $ solve2 d <$> (pruneGridWithDiagConstraint d g)
+    solveUnique' :: Variant -> Grid -> Search
+    solveUnique' v g = fromMaybe NoSolution'
+        $ solve2 v <$> (pruneGridWithVariant v g)
 
-    solve2 :: Boolean -> Grid -> Search
-    solve2 d g
-        | isGridInvalidWithDiagConstraint d g = NoSolution'
+    solve2 :: Variant -> Grid -> Search
+    solve2 v g
+        | isGridInvalidWithVariant v g = NoSolution'
         | isGridFilled g  = AtLeast' g
         | otherwise       = case nextGrids g of
             Nothing -> NoSolution'
-            (Just (Tuple grid1 grid2)) -> case solveUnique' d grid1 of
+            (Just (Tuple grid1 grid2)) -> case solveUnique' v grid1 of
                 x@(NotUnique' _ _) -> x
-                x -> x `mergeSearch` (solveUnique' d grid2)
+                x -> x `mergeSearch` (solveUnique' v grid2)
 
     searchResult :: Search -> SearchResult
     searchResult NoSolution' = NoSolution
