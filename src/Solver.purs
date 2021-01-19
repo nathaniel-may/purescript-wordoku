@@ -24,15 +24,6 @@ import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
 import Lib (Tuple3(..), chunksOf, isUnique, on, transpose, unique, zip3)
 
-numberPuzzle :: String
-numberPuzzle = "6......1.4.........2...........5.4.7..8...3....1.9....3..4..2...5.1........8.6..."
-
-wordPuzzle :: String
-wordPuzzle = ".nt...ps..y..shni....c.nyo..............o...i.h.s.tc........i.n.......c.....nyops"
-
-exSolution :: String
-exSolution = "693784512487512936125963874932651487568247391741398625319475268856129743274836159"
-
 data CellSet = CellSet Char (Array Char)
 instance cellSetShow :: Show CellSet where
     show (CellSet empty allValues) = "CellSet " <> show empty <> " " <> show allValues
