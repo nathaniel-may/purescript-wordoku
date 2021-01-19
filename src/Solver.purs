@@ -77,22 +77,22 @@ cellSetFromPuzzle str = mkCellSet '.' <<< delete '.' $ foldl
     [] 
     (toCharArray str)
 
-readCell :: CellSet -> Char -> Maybe Cell
+readCell :: CellSet -> Char -> Either String Cell
 readCell (CellSet empty allValues) v = 
     if v == empty 
-    then Just $ Possible allValues
+    then Right $ Possible allValues
     else if v `elem` allValues 
-        then Just (Fixed v) 
-        else Nothing
+        then Right (Fixed v) 
+        else Left $ "char " <> show v <> "is not one of " <> show allValues 
 
-readGrid :: CellSet -> String -> Maybe Grid
+readGrid :: CellSet -> String -> Either String Grid
 readGrid cellSet s =
     if CodePoints.length s /= 81
-    then Nothing
+    then Left "input must be exactly 81 characters long"
     else traverse (traverse $ readCell cellSet) (chunksOf 9 $ toCharArray s)
 
-readNumberGrid :: String -> Maybe Grid
-readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< (hush $ mkCellSet '.' ['1','2','3','4','5','6','7','8','9'])
+readNumberGrid :: String -> Either String Grid
+readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< mkCellSet '.' ['1','2','3','4','5','6','7','8','9']
 
 showGridWithPossibilities :: CellSet -> Grid -> String
 showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)

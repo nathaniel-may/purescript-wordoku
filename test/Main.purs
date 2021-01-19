@@ -45,5 +45,5 @@ test2 = do
 
 solveStr :: Variant -> String -> Grid
 solveStr v str = fromMaybe [] $ (solve v)
-    =<< (flip readGrid str)
+    =<< (hush <<< flip readGrid str)
     =<< (hush $ cellSetFromPuzzle str)

@@ -3,6 +3,7 @@ module Generator where
 import Prelude
 
 import Data.Array (cons, deleteAt, elem, index, foldl, length, replicate, uncons, zip, (..))
+import Data.Either (hush)
 import Data.Enum (class Enum)
 import Data.Map (Map)
 import Data.Map as Map
@@ -72,7 +73,7 @@ generate = generate' where
 
     wordMap :: String -> String -> Map Char Char
     wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
-        where solved = fromMaybe sudoku $ map gridString $ solve UniqueDiagonal <<< fromMaybe [] <<< readNumberGrid $ sudoku
+        where solved = fromMaybe sudoku $ map gridString $ solve UniqueDiagonal <<< fromMaybe [] <<< hush <<< readNumberGrid $ sudoku
 
     -- keys become values
     mapValues :: Map Char Char -> String -> String
@@ -84,7 +85,7 @@ generate = generate' where
 generateSudoku :: Variant -> Difficulty -> Effect String
 generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
     cellSet <- mixCellSet numbers
-    let mFilled = solve restrictDiag =<< (readGrid cellSet emptySudoku)
+    let mFilled = solve restrictDiag =<< (hush $ readGrid cellSet emptySudoku)
     randIdxs <- randomArray (0..80)
     pure $ (reduceBy cellSet (81 - diffNum difficulty) randIdxs) =<< mFilled 
     where
