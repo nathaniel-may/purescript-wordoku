@@ -5,7 +5,7 @@ import Prelude
 import Data.Array (elem, foldl)
 import Data.Either (hush)
 import Data.Maybe (fromMaybe)
-import Data.Traversable (traverse)
+import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Generator (Difficulty(..), Game(..), generate)
 import Solver (cellSetFromPuzzle, diagonalOf, readGrid, solve)
@@ -14,8 +14,11 @@ import Wordlist (wordlist)
 
 main :: Effect Unit
 main = do 
-    t1 <- test1
-    void $ traverse quickCheck [t1]
+    tests <- allTests
+    void $ traverse quickCheck tests
+
+allTests :: Effect (Array Result)
+allTests = sequence [test1]
 
 test1 :: Effect Result
 test1 = do
