@@ -181,20 +181,18 @@ pruneCellsByExclusives cells = case exclusives of
             intersection :: Array Char
             intersection = xs `Array.intersect` allExclusives
 
-pruneGrid' :: Grid -> Maybe Grid
-pruneGrid' grid = 
+pruneGrid' :: Variant -> Grid -> Maybe Grid
+pruneGrid' UniqueDiagonal grid = pruneDiag =<< pruneGrid' Standard grid
+pruneGrid' Standard grid = 
     -- prune cells as rows
     traverse pruneCells grid
     -- make columns into rows, prune and replace 
     >>= map transpose <<< traverse pruneCells <<< transpose
     -- make subgrids rows, prune and replace
     >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
-
-pruneGridWithUniqueDiagonal' :: Grid -> Maybe Grid
-pruneGridWithUniqueDiagonal' grid = pruneDiag =<< pruneGrid' grid where
     
-    pruneDiag :: Grid -> Maybe Grid
-    pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
+pruneDiag :: Grid -> Maybe Grid
+pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
 
 diagonalOf :: Grid -> Row
 diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
@@ -202,9 +200,8 @@ diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
 replaceDiagonal :: Row -> Grid -> Grid
 replaceDiagonal row grid = foldl (\grid' (Tuple cell i) -> replace2D i cell grid') grid (row `zip` diagIdxs)
 
-pruneGridWithVariant :: Variant -> Grid -> Maybe Grid
-pruneGridWithVariant UniqueDiagonal = fixM pruneGridWithUniqueDiagonal'
-pruneGridWithVariant Standard = fixM pruneGrid'
+pruneGrid :: Variant -> Grid -> Maybe Grid
+pruneGrid = fixM <<< pruneGrid'
 
 fixM :: ∀ m a. Monad m => Eq a => (a -> m a) -> a -> m a
 fixM f x = f x >>= \x' -> if x' == x then pure x else fixM f x'
@@ -263,22 +260,22 @@ isInvalidRow row =
             _ -> false)
     in emptyPossibles || (not isUnique $ fixeds) 
 
-isGridInvalid' :: Grid -> Boolean
-isGridInvalid' grid = any isInvalidRow grid
-  || any isInvalidRow (transpose grid)
-  || any isInvalidRow (subGridsToRows grid)
-
-isGridInvalidWithVariant :: Variant -> Grid -> Boolean
-isGridInvalidWithVariant UniqueDiagonal grid = isInvalidRow (diagonalOf grid) || isGridInvalid' grid
-isGridInvalidWithVariant Standard grid = isGridInvalid' grid
+isGridInvalid :: Variant -> Grid -> Boolean
+isGridInvalid UniqueDiagonal grid = 
+    isInvalidRow (diagonalOf grid) 
+    || isGridInvalid Standard grid
+isGridInvalid Standard grid = 
+    any isInvalidRow grid 
+    || any isInvalidRow (transpose grid) 
+    || any isInvalidRow (subGridsToRows grid)
 
 {- 
 Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
 -} 
 solve :: Variant -> Grid -> Maybe Grid
-solve v grid = solve' =<< (pruneGridWithVariant v $ grid) where
+solve v grid = solve' =<< (pruneGrid v $ grid) where
     solve' g
-      | isGridInvalidWithVariant v g = Nothing
+      | isGridInvalid v g = Nothing
       | isGridFilled g  = Just g
       | otherwise       = nextGrids g >>= (\(Tuple grid1 grid2) -> 
             case solve v grid1 of
@@ -290,10 +287,10 @@ solve v grid = solve' =<< (pruneGridWithVariant v $ grid) where
 Takes in a puzzle and finds all solutions.
 -} 
 solveAll :: Variant -> Grid -> Array Grid
-solveAll v grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGridWithVariant v $ grid) where
+solveAll v grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGrid v $ grid) where
     solveAll' :: Grid -> Array Grid
     solveAll' g
-      | isGridInvalidWithVariant v g = []
+      | isGridInvalid v g = []
       | isGridFilled g  = [g]
       | otherwise = 
         concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) -> 
@@ -324,11 +321,11 @@ solveUnique v grid = searchResult $ solveUnique' v grid where
 
     solveUnique' :: Variant -> Grid -> Search
     solveUnique' v g = fromMaybe NoSolution'
-        $ solve2 v <$> (pruneGridWithVariant v g)
+        $ solve2 v <$> (pruneGrid v g)
 
     solve2 :: Variant -> Grid -> Search
     solve2 v g
-        | isGridInvalidWithVariant v g = NoSolution'
+        | isGridInvalid v g = NoSolution'
         | isGridFilled g  = AtLeast' g
         | otherwise       = case nextGrids g of
             Nothing -> NoSolution'
