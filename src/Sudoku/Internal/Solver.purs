@@ -1,8 +1,5 @@
-{-
-Translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-1/
-
-
--}
+-- | internal module for solving sudoku puzzles
+-- | Logic translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-1/
 
 module Sudoku.Internal.Solver where
 
@@ -38,6 +35,24 @@ type Row = Array Cell
 type Grid = Array Row
 
 data Variant = Standard | UniqueDiagonal
+
+data SearchResult a
+    = NoSolution
+    | Unique a
+    | NotUnique a a
+instance searchResultShow :: Show a => Show (SearchResult a) where
+    show NoSolution = "NoSolution"
+    show (Unique s) = "(Unique " <> show s <> ")"
+    show (NotUnique s1 s2) = "(Unique " <> show s1 <> " " <> show s2 <> " " <> ")"
+instance functorSearchResult :: Functor SearchResult where
+    map f NoSolution      = NoSolution
+    map f (Unique x)      = Unique (f x)
+    map f (NotUnique x y) = NotUnique (f x) (f y)
+
+data Search
+    = NoSolution'
+    | NotUnique' Grid Grid
+    | AtLeast' Grid
 
 -- does not use smart constructor
 numbers :: CellSet
@@ -288,16 +303,6 @@ solveAll v grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGrid v $ g
             solveAll v grid1 <> solveAll v grid2
         )
 
-data SearchResult
-    = NoSolution
-    | Unique Grid
-    | NotUnique Grid Grid
-
-data Search
-    = NoSolution'
-    | NotUnique' Grid Grid
-    | AtLeast' Grid
-
 {- 
 Takes in a puzzle, determines if it has a solution, and if that solution is unique:
 - Nothing = puzzle has no solution
@@ -307,7 +312,7 @@ Takes in a puzzle, determines if it has a solution, and if that solution is uniq
 To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
 or exit early when it finds a second solution. For a fast single solution use `solve`.
 -} 
-solveUnique :: Variant -> Grid -> SearchResult
+solveUnique :: Variant -> Grid -> SearchResult Grid
 solveUnique v grid = searchResult $ solveUnique' v grid where
 
     solveUnique' :: Variant -> Grid -> Search
@@ -324,7 +329,7 @@ solveUnique v grid = searchResult $ solveUnique' v grid where
                 x@(NotUnique' _ _) -> x
                 x -> x `mergeSearch` (solveUnique' v grid2)
 
-    searchResult :: Search -> SearchResult
+    searchResult :: Search -> SearchResult Grid
     searchResult NoSolution' = NoSolution
     searchResult (NotUnique' s1 s2) = NotUnique s1 s2
     searchResult (AtLeast' s) = Unique s
