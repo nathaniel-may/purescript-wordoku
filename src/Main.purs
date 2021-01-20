@@ -158,7 +158,7 @@ render st =
                     [ HH.text "PureScript + Netlify | Source on " 
                     , HH.a 
                         [ HP.href "https://github.com/nathaniel-may/purescript-wordoku" ] 
-                        [ HH.text "Github" ]
+                        [ HH.text "GitHub" ]
                     ]
                 ]
             ]
