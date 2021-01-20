@@ -1,4 +1,4 @@
-module Lib where
+module Sudoku.Internal where
 
 import Prelude
 import Data.Array (cons, drop, null, take, uncons, (:))

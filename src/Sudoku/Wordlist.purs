@@ -1,4 +1,4 @@
-module Wordlist where
+module Sudoku.Wordlist where
 
 -- all words contain exactly 9 unique characters sourced 
 -- from an English language dictionary

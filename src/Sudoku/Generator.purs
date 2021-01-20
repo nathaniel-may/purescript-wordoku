@@ -1,4 +1,4 @@
-module Generator where
+module Sudoku.Generator where
 
 import Prelude
 
@@ -12,8 +12,8 @@ import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Solver (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
-import Wordlist (wordlist)
+import Sudoku.Solver (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
+import Sudoku.Wordlist (wordlist)
 
 type Opts = { 
       variant    :: Variant 

@@ -4,14 +4,14 @@ Translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-1/
 
 -}
 
-module Solver where
+module Sudoku.Solver where
 
 import Prelude
 
 import Control.Bind (bindFlipped)
 import Data.Array (all, any, concat, cons, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (..))
 import Data.Array as Array
-import Data.Either (Either(..), hush)
+import Data.Either (Either(..))
 import Data.Foldable (foldl, minimumBy)
 import Data.Int (quot)
 import Data.List as List
@@ -22,7 +22,7 @@ import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Lib (Tuple3(..), chunksOf, isUnique, on, transpose, unique, zip3)
+import Sudoku.Internal (Tuple3(..), chunksOf, isUnique, on, transpose, unique, zip3)
 
 data CellSet = CellSet Char (Array Char)
 instance cellSetShow :: Show CellSet where

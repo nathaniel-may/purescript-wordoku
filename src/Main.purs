@@ -15,19 +15,16 @@ import Effect.Aff (delay, effectCanceler, makeAff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Effect.Now (now)
-import Generator (Difficulty(..), Game(..), Opts, emptySudoku, generate)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.Component (Component)
 import Halogen.HTML as HH
 import Halogen.HTML.Core (HTML)
---import Halogen.HTML.Elements.Keyed as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
-import Lib (chunksOf)
-import Solver (Variant(..))
-
+import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generate)
+import Sudoku.Internal (chunksOf)
 
 main :: Effect Unit
 main = HA.runHalogenAff do

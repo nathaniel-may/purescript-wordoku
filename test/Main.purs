@@ -10,10 +10,11 @@ import Data.String as String
 import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
-import Generator (Difficulty(..), Game(..), generate)
-import Solver (Grid, Variant(..), cellSetFromPuzzle, diagonalOf, gridString, readGrid, solve)
+import Sudoku (Difficulty(..), Game(..), generate)
+import Sudoku.Solver (Grid, Variant(..), cellSetFromPuzzle, diagonalOf, gridString, readGrid, solve)
+import Sudoku.Wordlist (wordlist)
 import Test.QuickCheck (Result, quickCheck, (<?>))
-import Wordlist (wordlist)
+
 
 main :: Effect Unit
 main = do 
