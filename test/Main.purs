@@ -11,7 +11,7 @@ import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Sudoku (Difficulty(..), Game(..), generate)
-import Sudoku.Solver (Grid, Variant(..), cellSetFromPuzzle, diagonalOf, gridString, readGrid, solve)
+import Sudoku.Internal.Solver (Grid, Variant(..), cellSetFromPuzzle, diagonalOf, gridString, readGrid, solve)
 import Sudoku.Wordlist (wordlist)
 import Test.QuickCheck (Result, quickCheck, (<?>))
 

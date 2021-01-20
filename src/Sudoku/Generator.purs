@@ -12,7 +12,7 @@ import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Sudoku.Solver (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
+import Sudoku.Internal.Solver (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
 import Sudoku.Wordlist (wordlist)
 
 type Opts = { 

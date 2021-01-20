@@ -7,7 +7,13 @@ import Sudoku.Generator
     , emptySudoku 
     , generate
     ) as Exports
-    
-import Sudoku.Solver 
+
+import Sudoku.Internal.Solver 
     ( Variant(..)
+    ) as Exports
+
+import Sudoku.Solver
+    ( solve
+    , solveUnique
+    , solveAll
     ) as Exports
