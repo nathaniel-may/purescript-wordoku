@@ -2,7 +2,7 @@
 
 # purescript-wordoku
 
-This is a full halogen app which includes a sudoku solver, sudoku generator, and the option to map sudokus to colors or words. The wordoku variant asserts the additional constraint that the diagonal from the upper left to the lower right must form a complete, unique set. This diagonal then spells a 9 letter english word when solved.
+Sudoku Generator is a PureScript Halogen app which includes a sudoku solver, sudoku generator, and the option to map sudokus to colors or words. The wordoku variant asserts the additional constraint that the diagonal from the upper left to the lower right must form a complete, unique set. This diagonal then spells a 9 letter english word when solved.
 
 Difficulty levels map to a fixed number of starting cells:
 
@@ -15,6 +15,8 @@ Difficulty levels map to a fixed number of starting cells:
 | Challenge | 22               |
 
 All puzzles with the exception of colorkus can be printed directly through the browser by using the browser's print function. The provided `print.css` will remove buttons.
+
+## App Screenshots
 
 ![](./screenshots/all.png)
 
@@ -43,7 +45,7 @@ Under the hood, npm uses the following tools and target directores:
 
 | Tool     | Purpose                                 | Directory         |
 | -------- | --------------------------------------- | ----------------- |
-| `npm`    | install purescript, bower, pulp, parcel | node_modules      |
+| `npm`    | install purescript, bower, pulp, parcel | node_modules/     |
 | `bower`  | install app dependencies                | bower_components/ |
 | `pulp`   | build purescript dependencies, test app | output/           |
 | `parcel` | making a deployment bundle              | dist/             |
@@ -52,7 +54,7 @@ Under the hood, npm uses the following tools and target directores:
 Test locally and push to main. Netlify will build with the npm build script and DNS already points the sudoku.nathanielmay.com subdomain to the netlify app.
 
 ## Future work
-- Use web workers to generate puzzles so the UI doesn't freeze up. Most puzzles are generated in less than a second but challenge puzzles often take 10 seconds or longer to generate.
+- Use web workers to generate puzzles so the UI doesn't freeze up. Most puzzles are generated in less than a second but challenge puzzles often take ~2 seconds.
 - Add CI
 - Add more tests
 - Allow for printing colorkus.
