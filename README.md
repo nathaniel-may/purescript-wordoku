@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/5e93a932-86a7-4294-a6a6-e70ad0077833/deploy-status)](https://app.netlify.com/sites/stoic-poitras-5e2add/deploys)
+
 # purescript-wordoku
 
 This is a full halogen app which includes a sudoku solver, sudoku generator, and the option to map sudokus to colors or words. The wordoku variant asserts the additional constraint that the diagonal from the upper left to the lower right must form a complete, unique set. This diagonal then spells a 9 letter english word when solved.
