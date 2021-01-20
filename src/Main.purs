@@ -21,6 +21,7 @@ import Halogen.Aff as HA
 import Halogen.Component (Component)
 import Halogen.HTML as HH
 import Halogen.HTML.Core (HTML)
+--import Halogen.HTML.Elements.Keyed as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
@@ -111,7 +112,7 @@ puzzleLabel :: ∀ a b. State -> HTML a b
 puzzleLabel st = HH.div_ [ HH.label [ HP.id_ "label" ] [ HH.text (label st.displayed) ] ] where
     
     label :: Maybe { d :: Difficulty, g :: Game } -> String
-    label Nothing   = ""
+    label Nothing   = " "
     label (Just dg) = show dg.d <> " " <> show dg.g
 
 render :: ∀ a. State -> HTML a Action
@@ -150,6 +151,15 @@ render st =
                 [ HP.class_ (H.ClassName "label") ] 
                 [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle 
                 , puzzleLabel st
+                ]
+            , HH.div
+                [ HP.class_ (H.ClassName "VContainer") ]
+                [ HH.footer_
+                    [ HH.text "PureScript + Netlify | Source on " 
+                    , HH.a 
+                        [ HP.href "https://github.com/nathaniel-may/purescript-wordoku" ] 
+                        [ HH.text "Github" ]
+                    ]
                 ]
             ]
         ]

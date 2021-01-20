@@ -29,10 +29,6 @@ h1 {
     justify-content: center;
 }
 
-.label {
-    text-align: center;
-}
-
 button {
     background-color: rgb(152, 0, 182);
     color: white;
@@ -112,6 +108,10 @@ button:focus {
     .label {
         font-size: 16px;
     }
+
+    footer {
+        font-size: 10px;
+    }
 }
 
 /* For Desktop */
@@ -140,6 +140,10 @@ button:focus {
 
     .label {
         font-size: 20px;
+    }
+
+    footer {
+        font-size: 14px;
     }
 }
 
@@ -180,6 +184,29 @@ button:focus {
     color: #000;
     line-height: 50px;
     text-align: center
+}
+
+.label {
+    text-align: center;
+    white-space: pre;
+}
+
+footer {
+    color: grey;
+    font-family: Courier, Monaco, monospace;
+    margin-top: 25px;
+}
+
+a {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    color: inherit;
+}
+
+a:hover {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    opacity: 0.7;
 }
 
 [color= White] {

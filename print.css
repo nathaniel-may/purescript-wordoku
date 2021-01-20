@@ -94,3 +94,7 @@ button {
     text-align: center;
     font-size: 20px;
 }
+
+footer {
+    visibility: hidden;
+}
