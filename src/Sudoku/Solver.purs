@@ -11,8 +11,8 @@ import Prelude
 
 import Data.Either (Either)
 import Data.Maybe (Maybe)
-import Sudoku.Internal.Solver (SearchResult(..), Variant(..), colors, numbers) as Exports
-import Sudoku.Internal.Solver (CellSet, Variant, SearchResult, gridString, readGrid)
+import Sudoku.Internal (SearchResult(..), Variant(..), colors, numbers) as Exports
+import Sudoku.Internal (CellSet, Variant, SearchResult, gridString, readGrid)
 import Sudoku.Internal.Solver as Internal
 
 

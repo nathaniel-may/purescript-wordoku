@@ -4,16 +4,17 @@ import Sudoku.Generator
     ( Difficulty(..)
     , Game(..)
     , Opts
-    , emptySudoku 
+    , emptySudoku
     , generate
-    ) as Exports
-
-import Sudoku.Internal.Solver 
-    ( Variant(..)
+    , randomWord
     ) as Exports
 
 import Sudoku.Solver
-    ( solve
-    , solveUnique
+    ( SearchResult(..)
+    , Variant(..)
+    , colors
+    , numbers
+    , solve
     , solveAll
+    , solveUnique
     ) as Exports

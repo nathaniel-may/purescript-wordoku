@@ -6,61 +6,16 @@ module Sudoku.Internal.Solver where
 import Prelude
 
 import Control.Bind (bindFlipped)
-import Data.Array (all, any, concat, cons, delete, deleteAt, elem, filter, index, insertAt, length, uncons, zip, (..))
+import Data.Array (all, any, concat, delete, elem, filter, length, uncons, zip, (..))
 import Data.Array as Array
-import Data.Either (Either(..))
 import Data.Foldable (foldl, minimumBy)
-import Data.Int (quot)
 import Data.List as List
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (joinWith)
-import Data.String.CodePoints as CodePoints
-import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Sudoku.Internal (Tuple3(..), chunksOf, isUnique, on, transpose, unique, zip3)
+import Sudoku.Internal (Cell(..), CellSet(..), Grid, Row, Search(..), SearchResult(..), Tuple3(..), Variant(..), chunksOf, index2D, isUnique, on, replace2D, transpose, zip3)
 
-data CellSet = CellSet Char (Array Char)
-instance cellSetShow :: Show CellSet where
-    show (CellSet empty allValues) = "CellSet " <> show empty <> " " <> show allValues
-
-data Cell = Fixed Char | Possible (Array Char)
-derive instance cellEq :: Eq Cell
-instance cellShow :: Show Cell where
-  show (Fixed i) = fromCharArray [i]
-  show (Possible set) = "."
-
-type Row = Array Cell
-type Grid = Array Row
-
-data Variant = Standard | UniqueDiagonal
-
-data SearchResult a
-    = NoSolution
-    | Unique a
-    | NotUnique a a
-instance searchResultShow :: Show a => Show (SearchResult a) where
-    show NoSolution = "NoSolution"
-    show (Unique s) = "(Unique " <> show s <> ")"
-    show (NotUnique s1 s2) = "(Unique " <> show s1 <> " " <> show s2 <> " " <> ")"
-instance functorSearchResult :: Functor SearchResult where
-    map f NoSolution      = NoSolution
-    map f (Unique x)      = Unique (f x)
-    map f (NotUnique x y) = NotUnique (f x) (f y)
-
-data Search
-    = NoSolution'
-    | NotUnique' Grid Grid
-    | AtLeast' Grid
-
--- does not use smart constructor
-numbers :: CellSet
-numbers = (CellSet '.' ['1','2','3','4','5','6','7','8','9'])
-
--- does not use smart constructor
-colors :: CellSet
-colors = (CellSet '.' ['R','O','Y','L','G','B','I','P','V'])
 
 isPossible :: Cell -> Boolean
 isPossible (Possible _) = true
@@ -70,53 +25,8 @@ isFixed :: Cell -> Boolean
 isFixed (Fixed _) = true
 isFixed _         = false
 
-showGrid :: ∀ a. Show a => Array (Array a) -> String
-showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
-
-gridString :: Grid -> String
-gridString = joinWith "" <<< map (joinWith "" <<< map show)
-
 allBut :: CellSet -> Char -> Cell
 allBut (CellSet _ allValues) v = Possible $ delete v allValues
-
-mkCellSet :: Char -> Array Char -> Either String CellSet
-mkCellSet empty allValues 
-    | length allValues /= 9 = Left "char set must have exactly 9 characters"
-    | empty `elem` allValues = Left "the empty character cannot also be in the list of values"
-    | length (unique allValues) /= length allValues = Left "all characters must be unique"
-    | otherwise = Right (CellSet empty allValues)
-
-cellSetFromPuzzle :: String -> Either String CellSet
-cellSetFromPuzzle str = mkCellSet '.' <<< delete '.' $ foldl 
-    (\arr c -> if c `elem` arr then arr else cons c arr) 
-    [] 
-    (toCharArray str)
-
-readCell :: CellSet -> Char -> Either String Cell
-readCell (CellSet empty allValues) v = 
-    if v == empty 
-    then Right $ Possible allValues
-    else if v `elem` allValues 
-        then Right (Fixed v) 
-        else Left $ "char " <> show v <> "is not one of " <> show allValues 
-
-readGrid :: CellSet -> String -> Either String Grid
-readGrid cellSet s =
-    if CodePoints.length s /= 81
-    then Left "input must be exactly 81 characters long"
-    else traverse (traverse $ readCell cellSet) (chunksOf 9 $ toCharArray s)
-
-readNumberGrid :: String -> Either String Grid
-readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< mkCellSet '.' ['1','2','3','4','5','6','7','8','9']
-
-showGridWithPossibilities :: CellSet -> Grid -> String
-showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)
-  where
-    showCell (Fixed x)     = show x <> "          "
-    showCell (Possible xs) =
-      (\x -> x <> "]")
-      <<< foldl (\acc x -> acc <> if x `elem` xs then show x else " ") "["
-      $ allValues
 
 ----- solver fns -----
 
@@ -235,23 +145,6 @@ nextGrids grid = do
         fixCell (Tuple i (Possible [x, y])) = Just $ Tuple3 i (Fixed x) (Fixed y)
         fixCell (Tuple i (Possible xs)) = (\x -> Tuple3 i (Fixed x.head) (Possible x.tail)) <$> uncons xs
         fixCell _ = Nothing
-
-replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
-replaceAt idx f xs = fromMaybe xs $ do
-    x <- index xs idx
-    -- intentional shaddowing to prevent accidental refrence to input
-    xs <- deleteAt idx xs
-    insertAt idx (f x) xs
-
--- replace an element by its index [0,80] in a 9x9 grid
-replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
-replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
-    in replaceAt x (replaceAt y (const v))
-
--- retrieve an element by its index [0,80] in a 9x9 grid
-index2D :: ∀ a. Array (Array a) -> Int -> Maybe a
-index2D arr i = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
-    in (\arr' -> index arr' x) =<< (index arr y)
 
 isGridFilled :: Grid -> Boolean
 isGridFilled grid = all isFixed (concat grid)

@@ -10,8 +10,10 @@ import Data.String as String
 import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
-import Sudoku (Difficulty(..), Game(..), generate)
-import Sudoku.Internal.Solver (Grid, Variant(..), cellSetFromPuzzle, diagonalOf, gridString, readGrid, solve)
+import Sudoku (Difficulty(..), Game(..), Variant(..), generate)
+import Sudoku.Internal.Solver (diagonalOf)
+import Sudoku.Internal.Solver as Internal
+import Sudoku.Internal (Grid, cellSetFromPuzzle, gridString, readGrid)
 import Sudoku.Wordlist (wordlist)
 import Test.QuickCheck (Result, quickCheck, (<?>))
 
@@ -45,6 +47,6 @@ test2 = do
     pure $ (total81 && all9) <?> failureMsg
 
 solveStr :: Variant -> String -> Grid
-solveStr v str = fromMaybe [] $ (solve v)
+solveStr v str = fromMaybe [] $ (Internal.solve v)
     =<< (hush <<< flip readGrid str)
     =<< (hush $ cellSetFromPuzzle str)
