@@ -22,8 +22,7 @@ import Sudoku.Wordlist (wordlist)
 
 import Sudoku.Internal (emptySudoku) as Exports
 import Sudoku.Internal.Generator (Difficulty(..), Game(..), Opts) as Exports
--- import Sudoku.Internal.Solver (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), gridString, numbers, readGrid, readNumberGrid, replace2D, solve, solveUnique)
--- import Sudoku.Wordlist (wordlist)
+
 
 generate :: Opts -> Effect String
 generate opts = case opts.values of
