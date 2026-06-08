@@ -6,6 +6,7 @@ import Sudoku.Generator
     , Opts
     , emptySudoku
     , generate
+    , generateWithWorkers
     , randomWord
     ) as Exports
 
