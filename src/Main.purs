@@ -138,12 +138,14 @@ render st =
                 [ HP.class_ (H.ClassName "HContainer") ]
                 [ HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.id "Difficulty"
                     , HP.name (show st.selected.d)
                     , HE.onClick (\_ -> NextDifficulty st.selected.d)
                     ]
                     [ HH.text (show st.selected.d) ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.id "Game"
                     , HE.onClick (\_ -> NextGame st.selected.g)
                     ]
                     [ HH.text (show st.selected.g) ]
