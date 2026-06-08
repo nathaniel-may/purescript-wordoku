@@ -15,6 +15,7 @@ import Sudoku.Internal.Solver (diagonalOf)
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Internal (Grid, cellSetFromPuzzle, gridString, readGrid)
 import Sudoku.Wordlist (wordlist)
+import Test.EncodingTests (encodingTests)
 import Test.QuickCheck (Result, quickCheck, (<?>))
 
 
@@ -24,7 +25,9 @@ main = do
     void $ traverse quickCheck tests
 
 allTests :: Effect (Array Result)
-allTests = sequence [test1, test2]
+allTests = do
+    t0 <- sequence [test1, test2]
+    pure $ t0 <> encodingTests
 
 -- solved wordokus have a word from the wordlist on the diagonal
 test1 :: Effect Result
