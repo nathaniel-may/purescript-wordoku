@@ -20,7 +20,8 @@
     "ps-install": "spago install",
     "build": "spago build && parcel build index.html && cp _redirects dist/",
     "develop": "spago build && parcel index.html",
-    "test": "spago test"
+    "test": "spago test",
+    "bench": "spago build && node bench/main.mjs"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@parcel/packager-raw-url": "^2.16.4",
-    "@parcel/transformer-webmanifest": "^2.16.4"
+    "@parcel/transformer-webmanifest": "^2.16.4",
+    "tinybench": "^6.0.2"
   }
 }
