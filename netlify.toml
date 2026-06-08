@@ -1,0 +1,5 @@
+[build]
+  command = "npm run ps-install && npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
