@@ -34,6 +34,7 @@ type State =
     , displayed :: Maybe { d :: Difficulty, g :: Game }
     , loading   :: Boolean
     , puzzle    :: String 
+    , key       :: String
     }
 
 data Action 
@@ -55,6 +56,7 @@ initialState _ =
     , displayed: Nothing
     , loading: false
     , puzzle: emptySudoku 
+    , key: ""
     }
 
 fromState :: State -> Opts
@@ -168,12 +170,12 @@ handleAction = case _ of
         H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
         H.modify_ (_ { loading = true })
         start <- H.liftEffect $ map toDateTime now
-        sudoku <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
+        result <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
             val <- generate $ fromState st
             _   <- cb (Right val)
             pure <<< effectCanceler $ log "generation canceled")
         end <- H.liftEffect $ map toDateTime now
-        H.modify_ (_ { displayed = Just st.selected, loading = false, puzzle = sudoku })
+        H.modify_ (_ { displayed = Just st.selected, loading = false, puzzle = result.puzzle, key = result.key })
         H.liftEffect <<< log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
-        H.liftEffect $ log sudoku
+        H.liftEffect $ log result.puzzle
 

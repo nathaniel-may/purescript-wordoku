@@ -24,14 +24,20 @@ import Sudoku.Internal (emptySudoku) as Exports
 import Sudoku.Internal.Generator (Difficulty(..), Game(..), Opts) as Exports
 
 
-generate :: Opts -> Effect String
+generate :: Opts -> Effect { puzzle :: String, key :: String }
 generate opts = case opts.values of
-    Sudoku  -> game opts
-    Colorku -> mapValues (Map.fromFoldable $ numChars `zip` colorChars) <$> game opts
+    Sudoku  -> do
+        p <- game opts
+        pure { puzzle: p, key: "123456789" }
+    Colorku -> do
+        p <- game opts
+        let p' = mapValues (Map.fromFoldable $ numChars `zip` colorChars) p
+        pure { puzzle: p', key: "ROYLGBIPV" }
     Wordoku -> do
         g <- game opts
         w <- randomWord unit
-        pure $ mapValues (wordMap w g) g
+        let p = mapValues (wordMap w g) g
+        pure { puzzle: p, key: w }
     where
 
     game :: Opts -> Effect String
