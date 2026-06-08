@@ -43,7 +43,8 @@ parseKey Colorku k | k == "ROYLGBIPV" = Just ColorkuKey
 parseKey Wordoku k 
   | length k == keyLength 
     && length (fromCharArray $ nub $ toCharArray k) == keyLength
-    && not ('.' `elem` toCharArray k) = Just (WordokuKey k)
+    && not ('.' `elem` toCharArray k)
+    && all (\c -> c >= 'a' && c <= 'z') (toCharArray k) = Just (WordokuKey k)
 parseKey _ _ = Nothing
 
 normalizeCell :: DecodedKey -> Char -> Char
