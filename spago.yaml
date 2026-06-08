@@ -13,6 +13,7 @@ package:
     - either
     - enums
     - foldable-traversable
+    - foreign
     - halogen
     - integers
     - lists
@@ -24,6 +25,8 @@ package:
     - strings
     - tuples
     - unfoldable
+    - web-events
+    - web-html
   test:
     main: Test.Main
     dependencies:
