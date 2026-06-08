@@ -26,7 +26,7 @@ import Sudoku.Workers (raceGenerateSudoku)
 import Sudoku.Encoding (DecodedKey(..), keyToString)
 import Sudoku.Internal (emptySudoku) as Exports
 import Sudoku.Internal.Generator (Difficulty(..), Game(..), Opts, generateSudoku, numChars) as Exports
-import Sudoku.Internal.Generator (Opts)
+import Sudoku.Internal.Generator (Game(..), Opts, numChars)
 
 generate :: Opts -> Effect { puzzle :: String, key :: DecodedKey }
 generate opts = case opts.values of
