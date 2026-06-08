@@ -9,7 +9,7 @@ import Data.Array ((..))
 import Data.Traversable (traverse)
 import Effect.Ref as Ref
 import Sudoku.Internal (Variant(..))
-import Sudoku.Internal.Generator (Difficulty(..))
+import Sudoku.Internal.Generator (Difficulty)
 
 foreign import data Worker :: Type
 foreign import workerCountImpl :: Effect Int

@@ -7,16 +7,24 @@ export const workerCountImpl = () => {
 };
 
 export const spawnWorkerImpl = onMsg => onErr => () => {
-  // Path assumes compiled location: output/Sudoku.Workers/foreign.js
-  const worker = new Worker(
-    new URL('../../worker.js', import.meta.url), 
-    { type: 'module' }
-  );
+  try {
+    const worker = new Worker(
+      new URL('../../src/worker.js', import.meta.url), 
+      { type: 'module' }
+    );
 
-  worker.onmessage = (e) => onMsg(e.data)();
-  worker.onerror = (e) => onErr(e.message)();
+    worker.onmessage = (e) => onMsg(e.data)();
+    worker.onerror = (e) => {
+      const msg = e.message || "Worker error (possibly failed to load script or module not supported)";
+      onErr(msg)();
+    };
 
-  return worker;
+    return worker;
+  } catch (err) {
+    onErr("Failed to spawn worker: " + (err.message || err))();
+    // Return a dummy object to satisfy the Type, though things will likely fail
+    return { terminate: () => {}, postMessage: () => {} };
+  }
 };
 
 export const postMessageImpl = worker => variant => difficulty => () => {

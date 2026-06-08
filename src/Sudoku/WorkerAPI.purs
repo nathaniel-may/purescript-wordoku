@@ -1,6 +1,5 @@
 module Sudoku.WorkerAPI (generateStringly) where
 
-import Prelude
 import Effect (Effect)
 import Sudoku.Internal (Variant(..))
 import Sudoku.Internal.Generator (Difficulty(..), generateSudoku)
