@@ -22,6 +22,8 @@ encodingTests =
     , testDecodePuzzle_Short
     , testDecodePuzzle_Long
     , testDecodePuzzle_NonDigit
+    , testDecodePuzzle_DuplicateKey
+    , testDecodePuzzle_DotInKey
     , testWordokuKeyInvariant
     ]
 
@@ -67,6 +69,16 @@ testDecodePuzzle_Long = (decodePuzzle (repeat 91 '0') == Nothing) <?> "decodePuz
 
 testDecodePuzzle_NonDigit :: Result
 testDecodePuzzle_NonDigit = (decodePuzzle (repeat 81 'a' <> repeat 9 'b') == Nothing) <?> "decodePuzzle non-digit failed"
+    where
+        repeat n c = foldr (\_ s -> s <> singleton c) "" (1..n)
+
+testDecodePuzzle_DuplicateKey :: Result
+testDecodePuzzle_DuplicateKey = (decodePuzzle (repeat 81 '0' <> "112345678") == Nothing) <?> "decodePuzzle duplicate key failed"
+    where
+        repeat n c = foldr (\_ s -> s <> singleton c) "" (1..n)
+
+testDecodePuzzle_DotInKey :: Result
+testDecodePuzzle_DotInKey = (decodePuzzle (repeat 81 '0' <> "123.45678") == Nothing) <?> "decodePuzzle dot in key failed"
     where
         repeat n c = foldr (\_ s -> s <> singleton c) "" (1..n)
 

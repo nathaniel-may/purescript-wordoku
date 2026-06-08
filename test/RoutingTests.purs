@@ -2,6 +2,9 @@ module Test.RoutingTests where
 
 import Prelude
 
+import Data.Array ((..))
+import Data.Foldable (foldr)
+import Data.String.CodeUnits (singleton)
 import Routing (Route(..), buildPath, parsePath)
 import Sudoku.Encoding (normalize)
 import Sudoku.Internal.Generator (Difficulty(..), Game(..))
@@ -16,6 +19,7 @@ routingTests =
     , testParseUnrecognizedGame
     , testParseValidGameUnrecognizedDifficulty
     , testParseMalformedPuzzle
+    , testParseKeyGameMismatch
     , testRoutingRoundTrip
     ]
 
@@ -39,6 +43,13 @@ testParseValidGameUnrecognizedDifficulty = (parsePath "/wordoku/unknown" == Game
 
 testParseMalformedPuzzle :: Result
 testParseMalformedPuzzle = (parsePath "/wordoku/tricky/too-short" == DifficultyRoute Wordoku Tricky) <?> "parsePath '/wordoku/tricky/too-short' failed"
+
+testParseKeyGameMismatch :: Result
+testParseKeyGameMismatch = 
+    let p = repeat 81 '0'
+        badKey = "ROYLGBIPV" -- Colorku key for a Sudoku game
+        repeat n c = foldr (\_ s -> s <> singleton c) "" (1..n)
+    in (parsePath ("/sudoku/tricky/" <> p <> badKey) == DifficultyRoute Sudoku Tricky) <?> "parsePath key/game mismatch failed"
 
 testRoutingRoundTrip :: Result
 testRoutingRoundTrip =

@@ -3,7 +3,7 @@ module Routing where
 import Prelude
 
 import Data.Array (filter)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split, toLower)
 import Sudoku.Encoding (decodePuzzle, encodePuzzle)
 import Sudoku.Internal.Generator (Difficulty(..), Game(..))
@@ -43,16 +43,31 @@ parsePath path =
   let segments = filter (_ /= "") (split (Pattern "/") path)
   in case segments of
     [] -> Home
-    [gStr] -> fromMaybe Home $ map GameRoute (parseGame gStr)
-    [gStr, dStr] -> fromMaybe (parsePath gStr) do
-      g <- parseGame gStr
-      pure $ fromMaybe (GameRoute g) $ map (DifficultyRoute g) (parseDifficulty dStr)
-    [gStr, dStr, pStr] -> fromMaybe (parsePath ("/" <> gStr <> "/" <> dStr)) do
-      g <- parseGame gStr
-      d <- parseDifficulty dStr
-      { puzzle, key } <- decodePuzzle pStr
-      pure $ PuzzleRoute g d puzzle key
+    [gStr] -> 
+      case parseGame gStr of
+        Just g -> GameRoute g
+        Nothing -> Home
+    [gStr, dStr] -> 
+      case parseGame gStr of
+        Just g -> 
+          case parseDifficulty dStr of
+            Just d -> DifficultyRoute g d
+            Nothing -> GameRoute g
+        Nothing -> Home
+    [gStr, dStr, pStr] -> 
+      case parseGame gStr, parseDifficulty dStr of
+        Just g, Just d -> 
+          case decodePuzzle pStr of
+            Just { puzzle, key } | isValidKey g key -> PuzzleRoute g d puzzle key
+            _ -> DifficultyRoute g d
+        Just g, Nothing -> GameRoute g
+        _, _ -> Home
     _ -> Home
+
+isValidKey :: Game -> String -> Boolean
+isValidKey Sudoku k = k == "123456789"
+isValidKey Colorku k = k == "ROYLGBIPV"
+isValidKey Wordoku _ = true -- decodePuzzle already checked 9 distinct non-dot chars
 
 buildPath :: Game -> Difficulty -> String -> String -> String
 buildPath g d p k = "/" <> toLower (show g) <> "/" <> toLower (show d) <> "/" <> encodePuzzle p k

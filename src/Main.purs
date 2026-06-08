@@ -44,7 +44,6 @@ type State =
     , displayed :: Maybe { d :: Difficulty, g :: Game }
     , loading   :: Boolean
     , puzzle    :: String 
-    , key       :: String
     }
 
 data Action 
@@ -71,7 +70,6 @@ initialState _ =
     , displayed: Nothing
     , loading: false
     , puzzle: emptySudoku 
-    , key: ""
     }
 
 fromState :: State -> Opts
@@ -197,10 +195,10 @@ handleAction = case _ of
     PathChanged path -> do
         let route = parsePath path
         case route of
-            Home -> H.modify_ (_ { puzzle = emptySudoku, key = "", displayed = Nothing })
-            GameRoute g -> H.modify_ (_ { selected { g = g }, puzzle = emptySudoku, key = "", displayed = Nothing })
-            DifficultyRoute g d -> H.modify_ (_ { selected { g = g, d = d }, puzzle = emptySudoku, key = "", displayed = Nothing })
-            PuzzleRoute g d p k -> H.modify_ (_ { selected = { g, d }, displayed = Just { g, d }, puzzle = denormalize k p, key = k })
+            Home -> H.modify_ (_ { puzzle = emptySudoku, displayed = Nothing })
+            GameRoute g -> H.modify_ (_ { selected { g = g }, puzzle = emptySudoku, displayed = Nothing })
+            DifficultyRoute g d -> H.modify_ (_ { selected { g = g, d = d }, puzzle = emptySudoku, displayed = Nothing })
+            PuzzleRoute g d p k -> H.modify_ (_ { selected = { g, d }, displayed = Just { g, d }, puzzle = denormalize k p })
 
     NextGame g -> H.modify_ (_ { selected { g = cycle Sudoku g } })
     NextDifficulty d -> H.modify_ (_ { selected { d = cycle Beginner d } })
@@ -215,7 +213,7 @@ handleAction = case _ of
             pure <<< effectCanceler $ log "generation canceled")
         end <- H.liftEffect $ map toDateTime now
         let { g, d } = st.selected
-        H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle, key = result.key })
+        H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle })
         
         let normalizedPuzzle = normalize result.key result.puzzle
             path = buildPath g d normalizedPuzzle result.key
