@@ -20,39 +20,59 @@ totalLength = 90
 digits :: String
 digits = "123456789"
 
-buildKey :: Game -> String -> String
-buildKey Sudoku _ = digits
-buildKey Colorku _ = "ROYLGBIPV"
-buildKey Wordoku word = word
+data DecodedKey
+  = SudokuKey
+  | ColorkuKey
+  | WordokuKey String
 
-normalizeCell :: String -> Char -> Char
-normalizeCell key cell = 
-  case elemIndex cell (toCharArray key) of
+derive instance eqDecodedKey :: Eq DecodedKey
+
+instance showDecodedKey :: Show DecodedKey where
+  show SudokuKey = "SudokuKey"
+  show ColorkuKey = "ColorkuKey"
+  show (WordokuKey w) = "WordokuKey " <> w
+
+keyToString :: DecodedKey -> String
+keyToString SudokuKey = digits
+keyToString ColorkuKey = "ROYLGBIPV"
+keyToString (WordokuKey w) = w
+
+parseKey :: Game -> String -> Maybe DecodedKey
+parseKey Sudoku k | k == digits = Just SudokuKey
+parseKey Colorku k | k == "ROYLGBIPV" = Just ColorkuKey
+parseKey Wordoku k 
+  | length k == keyLength 
+    && length (fromCharArray $ nub $ toCharArray k) == keyLength
+    && not ('.' `elem` toCharArray k) = Just (WordokuKey k)
+parseKey _ _ = Nothing
+
+normalizeCell :: DecodedKey -> Char -> Char
+normalizeCell dk cell = 
+  let key = keyToString dk
+  in case elemIndex cell (toCharArray key) of
     Just i -> fromMaybe '0' $ charAt i digits
     Nothing -> '0'
 
-normalize :: String -> String -> String
-normalize key puzzle = fromCharArray $ map (normalizeCell key) (toCharArray puzzle)
+normalize :: DecodedKey -> String -> String
+normalize dk puzzle = fromCharArray $ map (normalizeCell dk) (toCharArray puzzle)
 
-denormalize :: String -> String -> String
-denormalize key normalized = fromCharArray $ map denormalizeCell (toCharArray normalized)
+denormalize :: DecodedKey -> String -> String
+denormalize dk normalized = fromCharArray $ map denormalizeCell (toCharArray normalized)
   where
+    key = keyToString dk
     denormalizeCell '0' = '.'
     denormalizeCell c = fromMaybe '.' do
       i <- elemIndex c (toCharArray digits)
       charAt i key
 
-encodePuzzle :: String -> String -> String
-encodePuzzle normalized key = normalized <> key
+encodePuzzle :: String -> DecodedKey -> String
+encodePuzzle normalized key = normalized <> keyToString key
 
-decodePuzzle :: String -> Maybe { puzzle :: String, key :: String }
-decodePuzzle s
+decodePuzzle :: Game -> String -> Maybe { puzzle :: String, key :: DecodedKey }
+decodePuzzle g s
   | length s == totalLength = 
-      let { before: puzzle, after: key } = splitAt puzzleLength s
+      let { before: puzzle, after: keyStr } = splitAt puzzleLength s
       in if all (\c -> c >= '0' && c <= '9') (toCharArray puzzle)
-            && length (fromCharArray $ nub $ toCharArray key) == keyLength
-            && not ('.' `elem` toCharArray key)
-         then Just { puzzle, key }
+         then { puzzle, key: _ } <$> parseKey g keyStr
          else Nothing
   | otherwise = Nothing
-

@@ -6,7 +6,7 @@ import Data.Array ((..))
 import Data.Foldable (foldr)
 import Data.String.CodeUnits (singleton)
 import Routing (Route(..), buildPath, parsePath)
-import Sudoku.Encoding (normalize)
+import Sudoku.Encoding (DecodedKey(..), normalize)
 import Sudoku.Internal.Generator (Difficulty(..), Game(..))
 import Test.QuickCheck (Result, (<?>))
 
@@ -55,7 +55,7 @@ testRoutingRoundTrip :: Result
 testRoutingRoundTrip =
     let g = Wordoku
         d = Tricky
-        k = "countries"
+        k = WordokuKey "countries"
         p = "c.o.u.n.t.r.i.e.s................................................................"
         norm = normalize k p
         path = buildPath g d norm k

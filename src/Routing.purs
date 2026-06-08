@@ -5,14 +5,14 @@ import Prelude
 import Data.Array (filter)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split, toLower)
-import Sudoku.Encoding (decodePuzzle, encodePuzzle)
+import Sudoku.Encoding (DecodedKey, decodePuzzle, encodePuzzle)
 import Sudoku.Internal.Generator (Difficulty(..), Game(..))
 
 data Route
   = Home
   | GameRoute Game
   | DifficultyRoute Game Difficulty
-  | PuzzleRoute Game Difficulty String String
+  | PuzzleRoute Game Difficulty String DecodedKey
 
 derive instance eqRoute :: Eq Route
 
@@ -20,7 +20,7 @@ instance showRoute :: Show Route where
   show Home = "Home"
   show (GameRoute g) = "GameRoute " <> show g
   show (DifficultyRoute g d) = "DifficultyRoute " <> show g <> " " <> show d
-  show (PuzzleRoute g d p k) = "PuzzleRoute " <> show g <> " " <> show d <> " " <> p <> " " <> k
+  show (PuzzleRoute g d p k) = "PuzzleRoute " <> show g <> " " <> show d <> " " <> p <> " " <> show k
 
 parseGame :: String -> Maybe Game
 parseGame s = case toLower s of
@@ -57,17 +57,12 @@ parsePath path =
     [gStr, dStr, pStr] -> 
       case parseGame gStr, parseDifficulty dStr of
         Just g, Just d -> 
-          case decodePuzzle pStr of
-            Just { puzzle, key } | isValidKey g key -> PuzzleRoute g d puzzle key
+          case decodePuzzle g pStr of
+            Just { puzzle, key } -> PuzzleRoute g d puzzle key
             _ -> DifficultyRoute g d
         Just g, Nothing -> GameRoute g
         _, _ -> Home
     _ -> Home
 
-isValidKey :: Game -> String -> Boolean
-isValidKey Sudoku k = k == "123456789"
-isValidKey Colorku k = k == "ROYLGBIPV"
-isValidKey Wordoku _ = true -- decodePuzzle already checked 9 distinct non-dot chars
-
-buildPath :: Game -> Difficulty -> String -> String -> String
+buildPath :: Game -> Difficulty -> String -> DecodedKey -> String
 buildPath g d p k = "/" <> toLower (show g) <> "/" <> toLower (show d) <> "/" <> encodePuzzle p k
