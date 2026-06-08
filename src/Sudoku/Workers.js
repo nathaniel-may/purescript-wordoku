@@ -1,8 +1,14 @@
 const workerUrl = new URL('../../src/worker.js', import.meta.url);
 
+const isMobile = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+};
+
 export const workerCountImpl = () => {
   if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
-    return Math.min(4, navigator.hardwareConcurrency);
+    const cap = isMobile() ? 2 : 4;
+    return Math.min(cap, navigator.hardwareConcurrency);
   }
   return 2;
 };
@@ -23,7 +29,11 @@ export const onMessageImpl = worker => handler => () => {
 };
 
 export const onErrorImpl = worker => handler => () => { 
-  worker.onerror = e => handler(e.message || "Worker error")(); 
+  worker.onerror = e => {
+    // Web Workers often provide very little info for module load errors
+    const msg = e.message || "Worker error (likely module load failure or resource limit)";
+    handler(msg)(); 
+  };
 };
 
 export const terminateWorkerImpl = worker => () => worker.terminate();

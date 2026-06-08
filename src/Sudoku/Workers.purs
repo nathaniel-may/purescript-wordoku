@@ -120,7 +120,6 @@ handleMessage pool ws msg = do
 
 handleWorkerHardwareError :: WorkerPool -> WorkerState -> String -> Effect Unit
 handleWorkerHardwareError pool ws err = do
-  log $ "Worker hardware error: " <> err
   -- Terminate and remove from allWorkers/idleWorkers
   terminateWorkerImpl ws.worker
   Ref.modify_ (filter (\x -> x.id /= ws.id)) pool.allWorkers
@@ -130,7 +129,9 @@ handleWorkerHardwareError pool ws err = do
   mjid <- Ref.read ws.jobId
   case mjid of
     Nothing -> pure unit
-    Just rid -> handleFailure pool rid
+    Just rid -> do
+      log $ "Worker hardware error during job " <> show rid <> ": " <> err
+      handleFailure pool rid
 
 handleFailure :: WorkerPool -> Int -> Effect Unit
 handleFailure pool rid = do
