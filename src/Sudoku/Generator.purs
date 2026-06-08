@@ -1,6 +1,7 @@
 module Sudoku.Generator 
     ( module Exports
     , generate
+    , generateWithWorkers
     , randomWord
     ) 
 where
@@ -14,17 +15,18 @@ import Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Effect (Effect)
+import Effect.Aff (Aff)
+import Effect.Class (liftEffect)
 import Effect.Random (randomInt)
 import Sudoku.Internal (Variant(..), diagonalOf, gridString, readNumberGrid)
-import Sudoku.Internal.Generator (Game(..), Opts, colorChars, generateSudoku, numChars)
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Wordlist (wordlist)
+import Sudoku.Workers (raceGenerateSudoku)
 
 import Sudoku.Encoding (DecodedKey(..), keyToString)
 import Sudoku.Internal (emptySudoku) as Exports
 import Sudoku.Internal.Generator (Difficulty(..), Game(..), Opts, generateSudoku, numChars) as Exports
-import Sudoku.Internal.Generator (Game(..), Opts, generateSudoku, numChars)
-
+import Sudoku.Internal.Generator (Opts)
 
 generate :: Opts -> Effect { puzzle :: String, key :: DecodedKey }
 generate opts = case opts.values of
@@ -43,20 +45,36 @@ generate opts = case opts.values of
             p = mapValues (wordMap w g) g
         pure { puzzle: p, key: dk }
     where
-
     game :: Opts -> Effect String
-    game opts = generateSudoku opts.variant opts.difficulty
+    game o = Exports.generateSudoku o.variant o.difficulty
 
-    wordMap :: String -> String -> Map Char Char
-    wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
-        where solved = fromMaybe sudoku $ map gridString $ Internal.solve UniqueDiagonal <<< fromMaybe [] <<< hush <<< readNumberGrid $ sudoku
+generateWithWorkers :: Int -> Opts -> Aff { puzzle :: String, key :: DecodedKey }
+generateWithWorkers numWorkers opts = case opts.values of
+    Exports.Sudoku -> do
+        p <- raceGenerateSudoku numWorkers opts.variant opts.difficulty
+        pure { puzzle: p, key: SudokuKey }
+    Exports.Colorku -> do
+        p <- raceGenerateSudoku numWorkers opts.variant opts.difficulty
+        let dk = ColorkuKey
+            p' = mapValues (Map.fromFoldable $ Exports.numChars `zip` toCharArray (keyToString dk)) p
+        pure { puzzle: p', key: dk }
+    Exports.Wordoku -> do
+        p <- raceGenerateSudoku numWorkers opts.variant opts.difficulty
+        w <- liftEffect $ randomWord unit
+        let dk = WordokuKey w
+            p' = mapValues (wordMap w p) p
+        pure { puzzle: p', key: dk }
 
-    -- keys become values
-    mapValues :: Map Char Char -> String -> String
-    mapValues m str = foldl 
-        (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
-        ""
-        (toCharArray str)
+wordMap :: String -> String -> Map Char Char
+wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
+    where solved = fromMaybe sudoku $ map gridString $ Internal.solve UniqueDiagonal <<< fromMaybe [] <<< hush <<< readNumberGrid $ sudoku
+
+-- keys become values
+mapValues :: Map Char Char -> String -> String
+mapValues m str = foldl 
+    (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
+    ""
+    (toCharArray str)
 
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail
