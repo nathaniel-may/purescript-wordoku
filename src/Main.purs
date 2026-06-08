@@ -4,14 +4,12 @@ import Prelude
 
 import Data.DateTime (diff)
 import Data.DateTime.Instant (toDateTime)
-import Data.Either (Either(..))
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (delay, effectCanceler, makeAff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Effect.Now (now)
@@ -24,9 +22,10 @@ import Halogen.HTML.Properties as HP
 import Halogen.Subscription as HS
 import Halogen.VDom.Driver (runUI)
 import Routing (Route(..), buildPath, parsePath)
-import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generate)
+import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generateWithWorkers)
 import Sudoku.Encoding (denormalize, normalize)
 import Sudoku.Internal (chunksOf)
+import Sudoku.Workers (workerCount)
 import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget (addEventListener, eventListener)
 import Web.HTML (window)
@@ -207,10 +206,8 @@ handleAction = case _ of
         H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
         H.modify_ (_ { loading = true })
         start <- H.liftEffect $ map toDateTime now
-        result <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
-            val <- generate $ fromState st
-            _   <- cb (Right val)
-            pure <<< effectCanceler $ log "generation canceled")
+        n      <- H.liftEffect workerCount
+        result <- H.liftAff $ generateWithWorkers n (fromState st)
         end <- H.liftEffect $ map toDateTime now
         let { g, d } = st.selected
         H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle })
