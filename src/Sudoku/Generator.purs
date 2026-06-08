@@ -21,7 +21,7 @@ import Effect.Random (randomInt)
 import Sudoku.Internal (Variant(..), diagonalOf, gridString, readNumberGrid)
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Wordlist (wordlist)
-import Sudoku.Workers (raceGenerateSudoku)
+import Sudoku.Workers (WorkerPool, raceGenerateSudoku)
 
 import Sudoku.Encoding (DecodedKey(..), keyToString)
 import Sudoku.Internal (emptySudoku) as Exports
@@ -48,18 +48,18 @@ generate opts = case opts.values of
     game :: Opts -> Effect String
     game o = Exports.generateSudoku o.variant o.difficulty
 
-generateWithWorkers :: Int -> Opts -> Aff { puzzle :: String, key :: DecodedKey }
-generateWithWorkers numWorkers opts = case opts.values of
+generateWithWorkers :: WorkerPool -> Int -> Opts -> Aff { puzzle :: String, key :: DecodedKey }
+generateWithWorkers pool numWorkers opts = case opts.values of
     Exports.Sudoku -> do
-        p <- raceGenerateSudoku numWorkers opts.variant opts.difficulty
+        p <- raceGenerateSudoku pool numWorkers opts.variant opts.difficulty
         pure { puzzle: p, key: SudokuKey }
     Exports.Colorku -> do
-        p <- raceGenerateSudoku numWorkers opts.variant opts.difficulty
+        p <- raceGenerateSudoku pool numWorkers opts.variant opts.difficulty
         let dk = ColorkuKey
             p' = mapValues (Map.fromFoldable $ Exports.numChars `zip` toCharArray (keyToString dk)) p
         pure { puzzle: p', key: dk }
     Exports.Wordoku -> do
-        p <- raceGenerateSudoku numWorkers opts.variant opts.difficulty
+        p <- raceGenerateSudoku pool numWorkers opts.variant opts.difficulty
         w <- liftEffect $ randomWord unit
         let dk = WordokuKey w
             p' = mapValues (wordMap w p) p

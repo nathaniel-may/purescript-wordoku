@@ -1,36 +1,29 @@
+const workerUrl = new URL('../../src/worker.js', import.meta.url);
+
 export const workerCountImpl = () => {
   if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
-    // We cap at 4 to avoid excessive memory/CPU contention on mobile.
     return Math.min(4, navigator.hardwareConcurrency);
   }
   return 2;
 };
 
-export const spawnWorkerImpl = onMsg => onErr => () => {
+export const spawnWorkerImpl = onErr => () => {
   try {
-    const worker = new Worker(
-      new URL('../../src/worker.js', import.meta.url), 
-      { type: 'module' }
-    );
-
-    worker.onmessage = (e) => onMsg(e.data)();
-    worker.onerror = (e) => {
-      const msg = e.message || "Worker error (possibly failed to load script or module not supported)";
-      onErr(msg)();
-    };
-
-    return worker;
+    return new Worker(workerUrl, { type: 'module' });
   } catch (err) {
     onErr("Failed to spawn worker: " + (err.message || err))();
-    // Return a dummy object to satisfy the Type, though things will likely fail
-    return { terminate: () => {}, postMessage: () => {} };
+    return null;
   }
 };
 
-export const postMessageImpl = worker => variant => difficulty => () => {
-  worker.postMessage({ variant, difficulty });
+export const postMessageImpl = worker => msg => () => worker.postMessage(msg);
+
+export const onMessageImpl = worker => handler => () => { 
+  worker.onmessage = e => handler(e.data)(); 
 };
 
-export const terminateWorkerImpl = worker => () => {
-  worker.terminate();
+export const onErrorImpl = worker => handler => () => { 
+  worker.onerror = e => handler(e.message || "Worker error")(); 
 };
+
+export const terminateWorkerImpl = worker => () => worker.terminate();
