@@ -17,18 +17,18 @@ import Sudoku.Internal (Grid, cellSetFromPuzzle, gridString, readGrid)
 import Sudoku.Wordlist (wordlist)
 import Test.EncodingTests (encodingTests)
 import Test.RoutingTests (routingTests)
-import Test.QuickCheck (Result, quickCheck, (<?>))
+import Test.QuickCheck (Result, quickCheck, quickCheck', (<?>))
 
 
 main :: Effect Unit
 main = do 
-    tests <- allTests
-    void $ traverse quickCheck tests
+    props <- allProps
+    void $ traverse quickCheck props
+    let unitTests = encodingTests <> routingTests
+    void $ traverse (quickCheck' 1) unitTests
 
-allTests :: Effect (Array Result)
-allTests = do
-    t0 <- sequence [test1, test2]
-    pure $ t0 <> encodingTests <> routingTests
+allProps :: Effect (Array Result)
+allProps = sequence [test1, test2]
 
 -- solved wordokus have a word from the wordlist on the diagonal
 test1 :: Effect Result
