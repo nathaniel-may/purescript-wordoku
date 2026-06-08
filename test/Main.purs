@@ -2,7 +2,7 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (all, elem, foldl, groupAll)
+import Data.Array (all, elem, foldl, groupAll, (..))
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either (hush)
 import Data.Maybe (fromMaybe)
@@ -28,7 +28,7 @@ main = do
     void $ traverse (quickCheck' 1) unitTests
 
 allProps :: Effect (Array Result)
-allProps = sequence [test1, test2]
+allProps = sequence [test1, test2, test3]
 
 -- solved wordokus have a word from the wordlist on the diagonal
 test1 :: Effect Result
@@ -49,6 +49,12 @@ test2 = do
     let all9 = all (\x -> x == 9) $ map NonEmptyArray.length (groupAll $ toCharArray solvedStr)
     let failureMsg = (if total81 then "" else "Solution should have 81 values. It has " <> (show $ String.length solvedStr) <> ". ") <> (if all9 then "" else "Each value doesn't show up 9 times in a solved puzzle.")
     pure $ (total81 && all9) <?> failureMsg
+
+test3 :: Effect Result
+test3 = do
+    -- NOTE: Tests core algorithm termination. Does NOT use workers.
+    _ <- traverse (\_ -> generate { difficulty: Challenge, variant: UniqueDiagonal, values: Wordoku }) (1..10)
+    pure $ true <?> "Challenge generation failed to complete"
 
 solveStr :: Variant -> String -> Grid
 solveStr v str = fromMaybe [] $ (Internal.solve v)
