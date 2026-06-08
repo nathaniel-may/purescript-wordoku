@@ -15,14 +15,24 @@ import Effect.Aff (delay, effectCanceler, makeAff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Effect.Now (now)
+import Foreign (unsafeToForeign)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Subscription as HS
 import Halogen.VDom.Driver (runUI)
+import Routing (Route(..), buildPath, parsePath)
 import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generate)
+import Sudoku.Encoding (denormalize, normalize)
 import Sudoku.Internal (chunksOf)
+import Web.Event.Event (EventType(..))
+import Web.Event.EventTarget (addEventListener, eventListener)
+import Web.HTML (window)
+import Web.HTML.History (DocumentTitle(..), URL(..), pushState)
+import Web.HTML.Location (pathname)
+import Web.HTML.Window (history, location, toEventTarget)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
@@ -37,7 +47,9 @@ type State =
     }
 
 data Action 
-    = Generate
+    = Initialize
+    | PathChanged    String
+    | Generate
     | NextGame       Game
     | NextDifficulty Difficulty
 
@@ -46,7 +58,10 @@ component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval { handleAction = handleAction }
+    , eval: H.mkEval $ H.defaultEval 
+        { handleAction = handleAction
+        , initialize = Just Initialize
+        }
     }
 
 initialState :: ∀ i. i -> State
@@ -161,6 +176,30 @@ render st =
 
 handleAction :: ∀ o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
+    Initialize -> do
+        { emitter, listener } <- H.liftEffect HS.create
+        void $ H.subscribe emitter
+        H.liftEffect do
+            w <- window
+            let et = toEventTarget w
+            cb <- eventListener \_ -> do
+                loc <- location w
+                path <- pathname loc
+                HS.notify listener (PathChanged path)
+            addEventListener (EventType "popstate") cb false et
+            
+            loc <- location w
+            path <- pathname loc
+            HS.notify listener (PathChanged path)
+
+    PathChanged path -> do
+        let route = parsePath path
+        case route of
+            Home -> H.modify_ (_ { puzzle = emptySudoku, displayed = Nothing })
+            GameRoute g -> H.modify_ (_ { selected { g = g }, puzzle = emptySudoku, displayed = Nothing })
+            DifficultyRoute g d -> H.modify_ (_ { selected { g = g, d = d }, puzzle = emptySudoku, displayed = Nothing })
+            PuzzleRoute g d p k -> H.modify_ (_ { selected = { g, d }, displayed = Just { g, d }, puzzle = denormalize k p })
+
     NextGame g -> H.modify_ (_ { selected { g = cycle Sudoku g } })
     NextDifficulty d -> H.modify_ (_ { selected { d = cycle Beginner d } })
     Generate -> do
@@ -168,12 +207,20 @@ handleAction = case _ of
         H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
         H.modify_ (_ { loading = true })
         start <- H.liftEffect $ map toDateTime now
-        sudoku <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
+        result <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
             val <- generate $ fromState st
             _   <- cb (Right val)
             pure <<< effectCanceler $ log "generation canceled")
         end <- H.liftEffect $ map toDateTime now
-        H.modify_ (_ { displayed = Just st.selected, loading = false, puzzle = sudoku })
-        H.liftEffect <<< log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
-        H.liftEffect $ log sudoku
+        let { g, d } = st.selected
+        H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle })
+        
+        let normalizedPuzzle = normalize result.key result.puzzle
+            path = buildPath g d normalizedPuzzle result.key
+        
+        H.liftEffect do
+            h <- history =<< window
+            pushState (unsafeToForeign unit) (DocumentTitle "") (URL path) h
+            log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
+            log result.puzzle
 

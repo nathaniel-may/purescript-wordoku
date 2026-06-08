@@ -20,18 +20,28 @@ import Sudoku.Internal.Generator (Game(..), Opts, colorChars, generateSudoku, nu
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Wordlist (wordlist)
 
+import Sudoku.Encoding (DecodedKey(..), keyToString)
 import Sudoku.Internal (emptySudoku) as Exports
-import Sudoku.Internal.Generator (Difficulty(..), Game(..), Opts) as Exports
+import Sudoku.Internal.Generator (Difficulty(..), Game(..), Opts, generateSudoku, numChars) as Exports
+import Sudoku.Internal.Generator (Game(..), Opts, generateSudoku, numChars)
 
 
-generate :: Opts -> Effect String
+generate :: Opts -> Effect { puzzle :: String, key :: DecodedKey }
 generate opts = case opts.values of
-    Sudoku  -> game opts
-    Colorku -> mapValues (Map.fromFoldable $ numChars `zip` colorChars) <$> game opts
+    Sudoku  -> do
+        p <- game opts
+        pure { puzzle: p, key: SudokuKey }
+    Colorku -> do
+        p <- game opts
+        let dk = ColorkuKey
+            p' = mapValues (Map.fromFoldable $ numChars `zip` toCharArray (keyToString dk)) p
+        pure { puzzle: p', key: dk }
     Wordoku -> do
         g <- game opts
         w <- randomWord unit
-        pure $ mapValues (wordMap w g) g
+        let dk = WordokuKey w
+            p = mapValues (wordMap w g) g
+        pure { puzzle: p, key: dk }
     where
 
     game :: Opts -> Effect String

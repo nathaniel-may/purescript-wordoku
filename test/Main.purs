@@ -15,21 +15,25 @@ import Sudoku.Internal.Solver (diagonalOf)
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Internal (Grid, cellSetFromPuzzle, gridString, readGrid)
 import Sudoku.Wordlist (wordlist)
-import Test.QuickCheck (Result, quickCheck, (<?>))
+import Test.EncodingTests (encodingTests)
+import Test.RoutingTests (routingTests)
+import Test.QuickCheck (Result, quickCheck, quickCheck', (<?>))
 
 
 main :: Effect Unit
 main = do 
-    tests <- allTests
-    void $ traverse quickCheck tests
+    props <- allProps
+    void $ traverse quickCheck props
+    let unitTests = encodingTests <> routingTests
+    void $ traverse (quickCheck' 1) unitTests
 
-allTests :: Effect (Array Result)
-allTests = sequence [test1, test2]
+allProps :: Effect (Array Result)
+allProps = sequence [test1, test2]
 
 -- solved wordokus have a word from the wordlist on the diagonal
 test1 :: Effect Result
 test1 = do
-    str <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
+    { puzzle: str } <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
     -- solved relies on all 9 characters being present in the generated puzzle. (not given)
     let solved = solveStr UniqueDiagonal str
     let diag = (foldl (<>) "") <<< (map show) <<< diagonalOf $ solved
@@ -39,7 +43,7 @@ test1 = do
 -- solved puzzles have 81 values and 9 of each value.
 test2 :: Effect Result
 test2 = do
-    str <- generate { difficulty: Beginner, variant: Standard, values: Sudoku }
+    { puzzle: str } <- generate { difficulty: Beginner, variant: Standard, values: Sudoku }
     let solvedStr = gridString $ solveStr Standard str
     let total81 = 81 == (String.length solvedStr)
     let all9 = all (\x -> x == 9) $ map NonEmptyArray.length (groupAll $ toCharArray solvedStr)
