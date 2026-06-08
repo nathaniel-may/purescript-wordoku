@@ -42,7 +42,7 @@ async function runTest() {
   });
 
   // Navigate to the app
-  await page.goto('http://localhost:63217', { waitUntil: 'networkidle2' });
+  await page.goto('http://localhost:1234', { waitUntil: 'networkidle2' });
 
   console.log("App loaded. Starting 50 generations...");
 
