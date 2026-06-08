@@ -17,9 +17,7 @@ import Effect.Console (log)
 import Effect.Now (now)
 import Halogen as H
 import Halogen.Aff as HA
-import Halogen.Component (Component)
 import Halogen.HTML as HH
-import Halogen.HTML.Core (HTML)
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
@@ -43,7 +41,7 @@ data Action
     | NextGame       Game
     | NextDifficulty Difficulty
 
-component :: ∀ m a b c. MonadAff m => Component HTML a b c m
+component :: ∀ q i o m. MonadAff m => H.Component q i o m
 component =
   H.mkComponent
     { initialState
@@ -69,7 +67,7 @@ fromState st =
 cycle :: ∀ a. Enum a => a -> a -> a
 cycle default = (fromMaybe default) <<< succ
 
-tableFrom :: ∀ a b. Game -> String -> HTML a b
+tableFrom :: ∀ w i. Game -> String -> HH.HTML w i
 tableFrom game s = case game of
     Colorku -> mkTable <<< colorkuRows $ s
     Wordoku -> mkTable <<< rows $ toUpper s
@@ -77,13 +75,13 @@ tableFrom game s = case game of
     where
         td' = HH.div [ HP.class_ (H.ClassName "td") ]
 
-        rows :: String -> Array (Array (HTML a b))
+        rows :: String -> Array (Array (HH.HTML w i))
         rows str = chunksOf 9 $ (\v -> td' [ HH.text (displayChar v) ]) <$> (toCharArray str)
         
-        colorkuRows :: String -> Array (Array (HTML a b))
+        colorkuRows :: String -> Array (Array (HH.HTML w i))
         colorkuRows str = chunksOf 9 $ (\color -> td' [ circle color ]) <$> (toCharArray str)
 
-        circle :: Char -> HTML a b
+        circle :: Char -> HH.HTML w i
         circle 'R' = circle' "Red"
         circle 'O' = circle' "Orange"
         circle 'Y' = circle' "Yellow"
@@ -95,24 +93,24 @@ tableFrom game s = case game of
         circle 'V' = circle' "Violet"
         circle _   = circle' "White"
 
-        circle' :: String -> HTML a b
+        circle' :: String -> HH.HTML w i
         circle' color = HH.span [ HP.class_ (H.ClassName "Circle"), HP.attr (H.AttrName "Color") color ] []
 
         displayChar :: Char -> String
         displayChar '.'  = " "
         displayChar char = singleton char
 
-        mkTable :: Array (Array (HTML a b)) -> HTML a b
-        mkTable = HH.div [ HP.id_ "table" ] <<< map (HH.div [ HP.class_ $ H.ClassName "tr" ])
+        mkTable :: Array (Array (HH.HTML w i)) -> HH.HTML w i
+        mkTable = HH.div [ HP.id "table" ] <<< map (HH.div [ HP.class_ $ H.ClassName "tr" ])
 
-puzzleLabel :: ∀ a b. State -> HTML a b
-puzzleLabel st = HH.div_ [ HH.label [ HP.id_ "label" ] [ HH.text (label st.displayed) ] ] where
+puzzleLabel :: ∀ w i. State -> HH.HTML w i
+puzzleLabel st = HH.div_ [ HH.label [ HP.id "label" ] [ HH.text (label st.displayed) ] ] where
     
     label :: Maybe { d :: Difficulty, g :: Game } -> String
     label Nothing   = " "
     label (Just dg) = show dg.d <> " " <> show dg.g
 
-render :: ∀ a. State -> HTML a Action
+render :: ∀ m. State -> H.ComponentHTML Action () m
 render st =
     HH.div
         [ HP.class_ (H.ClassName "VContainer") ]
@@ -125,12 +123,12 @@ render st =
                 [ HH.button
                     [ HP.type_ HP.ButtonButton
                     , HP.name (show st.selected.d)
-                    , HE.onClick (\_ -> Just $ NextDifficulty st.selected.d)
+                    , HE.onClick (\_ -> NextDifficulty st.selected.d)
                     ]
                     [ HH.text (show st.selected.d) ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
-                    , HE.onClick (\_ -> Just $ NextGame st.selected.g)
+                    , HE.onClick (\_ -> NextGame st.selected.g)
                     ]
                     [ HH.text (show st.selected.g) ]
                 ]
@@ -138,9 +136,9 @@ render st =
                 [ HP.class_ (H.ClassName "VContainer") ] 
                 [ HH.button
                     [ HP.disabled st.loading
-                    , HP.id_ "Generate"
+                    , HP.id "Generate"
                     , HP.type_ HP.ButtonButton
-                    , HE.onClick (\_ -> Just Generate)
+                    , HE.onClick (\_ -> Generate)
                     ]
                     [ HH.text if st.loading then "Working..." else "Generate" ]
                 ]

@@ -1,0 +1,31 @@
+workspace:
+  packageSet:
+    registry: 9.0.0
+
+package:
+  name: wordoku
+  dependencies:
+    - aff
+    - arrays
+    - console
+    - datetime
+    - effect
+    - either
+    - enums
+    - foldable-traversable
+    - halogen
+    - integers
+    - lists
+    - maybe
+    - now
+    - ordered-collections
+    - prelude
+    - random
+    - strings
+    - tuples
+    - unfoldable
+  test:
+    main: Test.Main
+    dependencies:
+      - psci-support
+      - quickcheck

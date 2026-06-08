@@ -2,7 +2,7 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (all, elem, foldl, group')
+import Data.Array (all, elem, foldl, groupAll)
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either (hush)
 import Data.Maybe (fromMaybe)
@@ -42,7 +42,7 @@ test2 = do
     str <- generate { difficulty: Beginner, variant: Standard, values: Sudoku }
     let solvedStr = gridString $ solveStr Standard str
     let total81 = 81 == (String.length solvedStr)
-    let all9 = all (\x -> x == 9) $ map NonEmptyArray.length (group' $ toCharArray solvedStr)
+    let all9 = all (\x -> x == 9) $ map NonEmptyArray.length (groupAll $ toCharArray solvedStr)
     let failureMsg = (if total81 then "" else "Solution should have 81 values. It has " <> (show $ String.length solvedStr) <> ". ") <> (if all9 then "" else "Each value doesn't show up 9 times in a solved puzzle.")
     pure $ (total81 && all9) <?> failureMsg
 

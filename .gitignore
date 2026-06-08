@@ -1,14 +1,14 @@
 # PureScript
-/bower_components/
 /node_modules/
-/.pulp-cache/
 /output/
 /generated-docs/
+/.spago/
 /.psc-package/
 /.psc*
 /.purs*
 /.psa*
 
 # Parcel
+/.parcel-cache/
 /.cache/
 /dist/

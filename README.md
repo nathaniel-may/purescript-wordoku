@@ -21,34 +21,42 @@ All puzzles with the exception of colorkus can be printed directly through the b
 ![](./screenshots/all.png)
 
 ## Dev
-To install all PureScript dev env dependencies: (only needs to be run once)
+
+**Prerequisites:** `git` must be on your PATH. If you use Zed on macOS, ensure `/opt/homebrew/bin` appears before `/Applications/Zed.app/Contents/MacOS` in your PATH, since Zed bundles a stripped-down git that lacks HTTPS transport.
+
+Install npm tools: (only needs to be run once)
 ```
 npm install
 ```
 
-Install app dependencies:
+Install PureScript dependencies:
 ```
-npm run-script install
+npm run ps-install
 ```
 
 Build the app with visible compiler errors:
 ```
-pulp build
+npx spago build
+```
+
+Run tests:
+```
+npm test
 ```
 
 Build and run developer server:
 ```
-npm run-script develop
+npm run develop
 ```
 
-Under the hood, npm uses the following tools and target directores:
+Under the hood, npm uses the following tools and target directories:
 
-| Tool     | Purpose                                 | Directory         |
-| -------- | --------------------------------------- | ----------------- |
-| `npm`    | install purescript, bower, pulp, parcel | node_modules/     |
-| `bower`  | install app dependencies                | bower_components/ |
-| `pulp`   | build purescript dependencies, test app | output/           |
-| `parcel` | making a deployment bundle              | dist/             |
+| Tool     | Purpose                                  | Directory     |
+| -------- | ---------------------------------------- | ------------- |
+| `npm`    | install purescript, spago, parcel        | node_modules/ |
+| `spago`  | install and build PureScript deps, tests | output/       |
+| `parcel` | bundle for deployment                    | dist/         |
+
 
 ## Deployment
 Test locally and push to main. Netlify will build with the npm build script and DNS already points the sudoku.nathanielmay.com subdomain to the netlify app.
