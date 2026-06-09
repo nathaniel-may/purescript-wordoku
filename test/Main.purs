@@ -2,18 +2,19 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (all, elem, filter, foldl, groupAll, length, null, (..))
+import Data.Array (all, elem, filter, find, foldl, groupAll, length, null, (..))
 import Data.Array.NonEmpty as NonEmptyArray
-import Data.Either (Either(..), hush)
+import Data.Either (Either(..), hush, isLeft)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String as String
 import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Sudoku (Difficulty(..), Game(..), Variant(..), generate)
+import Sudoku.Encoding (keyToString)
 import Sudoku.Internal.Solver (diagonalOf)
 import Sudoku.Internal.Solver as Internal
-import Sudoku.Internal (Grid, SearchResult(..), cellSetFromPuzzle, colors, gridString, numbers, readGrid, readNumberGrid)
+import Sudoku.Internal (Grid, SearchResult(..), cellSetFromPuzzle, gridString, mkCellSet, readGrid, readNumberGrid)
 import Sudoku.Internal.Generator (diffNum)
 import Sudoku.Wordlist (wordlist)
 import Test.EncodingTests (encodingTests)
@@ -34,29 +35,23 @@ allProps = sequence [test1, test2, test3, test4, test5]
 -- Helper to verify a generated puzzle meets all invariants
 checkInvariants :: Variant -> Difficulty -> Game -> Effect (Either String Unit)
 checkInvariants v d g = do
-    { puzzle: str } <- generate { difficulty: d, variant: v, values: g }
+    { puzzle: str, key } <- generate { difficulty: d, variant: v, values: g }
     let clueCount = length $ filter (\c -> c /= '.') (toCharArray str)
     let expectedClues = diffNum v d
-    -- For Sudoku/Colorku we know the cell set. For Wordoku we infer it but allow it to be < 9 
-    -- because some letters might be missing in the clues.
-    -- Actually, for Wordoku, we can just use mkCellSet '.' (unique (toCharArray (str-dots)))
-    -- But uniqueness check needs to know the FULL set of 9.
-    let mCellSet = case g of
-            Sudoku -> Right numbers
-            Colorku -> Right colors
-            Wordoku -> cellSetFromPuzzle str -- This still has the "must be 9" issue if we don't know the word
-
+    
+    let mCellSet = case mkCellSet '.' (toCharArray (keyToString key)) of
+            Left err -> Left $ "Cell set error: " <> err
+            Right cs -> Right cs
+    
     let uniqueness = case mCellSet of
-            Left err -> if g == Wordoku 
-                        then Right unit -- Skip uniqueness for Wordoku if we can't infer the 9-char set easily
-                        else Left $ "Cell set error: " <> err
+            Left err -> Left err
             Right cs -> case readGrid cs str of
                 Left err -> Left $ "Read grid error: " <> err
                 Right grid -> case Internal.solveUnique v grid of
                     Unique _ -> Right unit
                     NotUnique _ _ -> Left "Puzzle is not unique"
                     NoSolution -> Left "Puzzle has no solution"
-
+    
     pure $ if clueCount /= expectedClues
            then Left $ "Clue count mismatch: expected " <> show expectedClues <> ", got " <> show clueCount
            else uniqueness
@@ -87,29 +82,32 @@ test2 = do
 -- Verifies uniqueness and clue count for Standard Challenge (the hard case)
 test3 :: Effect Result
 test3 = do
-    results <- traverse (\_ -> checkInvariants Standard Challenge Sudoku) (1..1)
-    let failure = foldl (\acc r -> case acc, r of
-            Nothing, Left err -> Just err
-            _, _ -> acc) Nothing results
-    pure $ (all (\r -> r == Right unit) results) <?> ("Standard Challenge: " <> (fromMaybe "" failure))
+    results <- traverse (\_ -> checkInvariants Standard Challenge Sudoku) (1..5)
+    let mFirstFailure = find isLeft results
+    pure $ (null $ filter isLeft results) <?> ("Standard Challenge: " <> (fromMaybe "" $ mFirstFailure >>= hushLeft))
 
 -- Verifies uniqueness and clue count for UniqueDiagonal Challenge
 test4 :: Effect Result
 test4 = do
-    results <- traverse (\_ -> checkInvariants UniqueDiagonal Challenge Sudoku) (1..1)
-    let failure = foldl (\acc r -> case acc, r of
-            Nothing, Left err -> Just err
-            _, _ -> acc) Nothing results
-    pure $ (all (\r -> r == Right unit) results) <?> ("UniqueDiagonal Challenge: " <> (fromMaybe "" failure))
+    results <- traverse (\_ -> checkInvariants UniqueDiagonal Challenge Sudoku) (1..25)
+    let mFirstFailure = find isLeft results
+    pure $ (null $ filter isLeft results) <?> ("UniqueDiagonal Challenge: " <> (fromMaybe "" $ mFirstFailure >>= hushLeft))
 
 -- Verifies uniqueness and clue count across multiple difficulties (smoke test)
 test5 :: Effect Result
 test5 = do
+    -- Note: Wordoku uniqueness is checked here via checkInvariants, 
+    -- and also indirectly via test4 (which uses the same underlying generator logic).
     r1 <- checkInvariants Standard Beginner Sudoku
     r2 <- checkInvariants UniqueDiagonal Tricky Wordoku
     r3 <- checkInvariants Standard Difficult Colorku
-    let failures = filter (\r -> r /= Right unit) [r1, r2, r3]
-    pure $ (null failures) <?> "Cross-difficulty smoke test failed"
+    let results = [r1, r2, r3]
+    let mFirstFailure = find isLeft results
+    pure $ (null $ filter isLeft results) <?> ("Cross-difficulty smoke test failed: " <> (fromMaybe "" $ mFirstFailure >>= hushLeft))
+
+hushLeft :: ∀ a b. Either a b -> Maybe a
+hushLeft (Left x) = Just x
+hushLeft _ = Nothing
 
 solveStr :: Variant -> String -> Grid
 solveStr v str = fromMaybe [] $ (Internal.solve v) =<< (hush $ readNumberGrid str)

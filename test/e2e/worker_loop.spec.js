@@ -1,6 +1,5 @@
 const puppeteer = require('puppeteer');
 const path = require('path');
-const { spawn } = require('child_process');
 
 async function runTest() {
   console.log("Starting E2E test...");
