@@ -23,7 +23,7 @@ import Test.QuickCheck (Result, quickCheck', (<?>))
 
 
 main :: Effect Unit
-main = do 
+main = do
     props <- allProps
     void $ traverse (quickCheck' 1) props -- Run each Effect property once (the iteration is handled inside)
     let unitTests = encodingTests <> routingTests
@@ -38,11 +38,11 @@ checkInvariants v d g = do
     { puzzle: str, key } <- generate { difficulty: d, variant: v, values: g }
     let clueCount = length $ filter (\c -> c /= '.') (toCharArray str)
     let expectedClues = diffNum v d
-    
+
     let mCellSet = case mkCellSet '.' (toCharArray (keyToString key)) of
             Left err -> Left $ "Cell set error: " <> err
             Right cs -> Right cs
-    
+
     let uniqueness = case mCellSet of
             Left err -> Left err
             Right cs -> case readGrid cs str of
@@ -51,7 +51,7 @@ checkInvariants v d g = do
                     Unique _ -> Right unit
                     NotUnique _ _ -> Left "Puzzle is not unique"
                     NoSolution -> Left "Puzzle has no solution"
-    
+
     pure $ if clueCount /= expectedClues
            then Left $ "Clue count mismatch: expected " <> show expectedClues <> ", got " <> show clueCount
            else uniqueness
@@ -66,7 +66,7 @@ test1 = do
         pure $ diag `elem` wordlist
     ) (1..10)
     pure $ (all identity results) <?> "Wordoku diagonal test failed in one or more iterations"
-    
+
 -- solved puzzles have 81 values and 9 of each value.
 test2 :: Effect Result
 test2 = do
@@ -96,7 +96,7 @@ test4 = do
 -- Verifies uniqueness and clue count across multiple difficulties (smoke test)
 test5 :: Effect Result
 test5 = do
-    -- Note: Wordoku uniqueness is checked here via checkInvariants, 
+    -- Note: Wordoku uniqueness is checked here via checkInvariants,
     -- and also indirectly via test4 (which uses the same underlying generator logic).
     r1 <- checkInvariants Standard Beginner Sudoku
     r2 <- checkInvariants UniqueDiagonal Tricky Wordoku

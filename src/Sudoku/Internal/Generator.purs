@@ -10,7 +10,6 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Effect (Effect)
-import Effect.Aff (makeAff)
 import Effect.Random (randomInt)
 import Sudoku.Internal (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), diagonalOf, emptySudoku, gridString, numbers, randomArray, readGrid, readNumberGrid, replace2D)
 import Sudoku.Internal.Solver (solve, solveUnique)
@@ -68,7 +67,7 @@ generate opts = case opts.values of
     where
 
     game :: Opts -> Effect String
-    game opts = generateSudoku opts.variant opts.difficulty
+    game opts' = generateSudoku opts'.variant opts'.difficulty
 
     wordMap :: String -> String -> Map Char Char
     wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
