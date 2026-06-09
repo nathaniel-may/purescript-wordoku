@@ -10,13 +10,14 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Effect (Effect)
+import Effect.Aff (makeAff)
 import Effect.Random (randomInt)
 import Sudoku.Internal (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), diagonalOf, emptySudoku, gridString, numbers, randomArray, readGrid, readNumberGrid, replace2D)
 import Sudoku.Internal.Solver (solve, solveUnique)
 import Sudoku.Wordlist (wordlist)
 
-type Opts = { 
-      variant    :: Variant 
+type Opts = {
+      variant    :: Variant
     , values     :: Game
     , difficulty :: Difficulty }
 
@@ -75,7 +76,7 @@ generate opts = case opts.values of
 
     -- keys become values
     mapValues :: Map Char Char -> String -> String
-    mapValues m str = foldl 
+    mapValues m str = foldl
         (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
         ""
         (toCharArray str)
@@ -85,25 +86,25 @@ generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to ge
     cellSet <- mixCellSet numbers
     let mFilled = solve restrictDiag =<< (hush $ readGrid cellSet emptySudoku)
     randIdxs <- randomArray (0..80)
-    pure $ (reduceBy cellSet (81 - diffNum restrictDiag difficulty) randIdxs) =<< mFilled 
+    pure $ (reduceBy cellSet (81 - diffNum restrictDiag difficulty) randIdxs) =<< mFilled
     where
         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
-        reduceBy cs count idxs grid = 
+        reduceBy cs count idxs grid =
             if (count <= 0) then Just grid
             else do
                 { head: idx, tail: rands } <- uncons idxs
                 let nextGrid = removeAt cs idx grid
                 case solveUnique restrictDiag nextGrid of
-                    Unique _ -> 
+                    Unique _ ->
                         case reduceBy cs (count - 1) rands nextGrid of
                             Nothing -> reduceBy cs count rands grid
                             Just grid' -> Just grid'
                     _ -> reduceBy cs count rands grid
 
         removeAt :: CellSet -> Int -> Grid -> Grid
-        removeAt (CellSet _ allValues) idx grid = 
+        removeAt (CellSet _ allValues) idx grid =
             replace2D idx (Possible allValues) grid
-        
+
         toStringOrLoop :: Maybe Grid -> Effect String
         toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
         toStringOrLoop (Just grid) = pure $ gridString grid
@@ -119,18 +120,19 @@ colorChars = ['R','O','Y','L','G','B','I','P','V']
 
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail
-    <<< index wordlist 
+    <<< index wordlist
     <$> randomInt 0 (length wordlist - 1)
 
 diffNum :: Variant -> Difficulty -> Int
-diffNum Standard Beginner  = 40
-diffNum Standard Casual    = 34
-diffNum Standard Tricky    = 30
-diffNum Standard Difficult = 26
-diffNum Standard Challenge = 24
-diffNum UniqueDiagonal Beginner  = 40
-diffNum UniqueDiagonal Casual    = 34
-diffNum UniqueDiagonal Tricky    = 30
-diffNum UniqueDiagonal Difficult = 26
+diffNum _ Beginner  = 40
+diffNum _ Casual    = 34
+diffNum _ Tricky    = 30
+diffNum _ Difficult = 26
+-- the UniqueDiagonal variant restricts the search space enough to make
+-- the constraints that puzzles must have unique solutions _easier_ to find
+-- than a is the case in a Standard puzzle.
 diffNum UniqueDiagonal Challenge = 22
-
+-- the Standard variant requires significantly more computation to find unique
+-- solutions at smaller clue numbers, so we slightly increase the number
+-- of clues to improve runtimes
+diffNum Standard Challenge = 24
