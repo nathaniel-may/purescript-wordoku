@@ -22,7 +22,7 @@
     "develop": "spago build && parcel index.html",
     "test": "spago test",
     "bench": "spago build && node bench/main.mjs",
-    "test:e2e": "node test/e2e/worker_loop.spec.js"
+    "test:e2e:manual": "node test/e2e/worker_loop.spec.js"
   },
   "repository": {
     "type": "git",

@@ -13,11 +13,11 @@ import Effect (Effect)
 import Effect.Aff (Aff, makeAff, nonCanceler, error)
 import Effect.Console (log)
 import Data.Either (Either(..))
-import Data.Array (filter, length, (..), take)
+import Data.Array (filter, length, (..), take, catMaybes)
 import Data.Traversable (traverse, for_)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable, toMaybe)
 import Effect.Exception (Error)
 import Effect.Ref (Ref)
@@ -26,10 +26,6 @@ import Sudoku.Internal (Variant(..))
 import Sudoku.Internal.Generator (Difficulty)
 
 foreign import data Worker :: Type
-
--- We need Eq for Worker to find it in arrays. 
--- Since it's a JS object, we'll assume the FFI provides a way or just use unsafeCoerce if needed.
--- But wait, I can just use a unique ID for each worker.
 
 type PendingRequest = 
   { cb :: Either Error String -> Effect Unit
@@ -146,6 +142,10 @@ handleFailure pool rid = do
       else do
         Ref.modify_ (Map.insert rid (req { outstanding = newCount })) pool.pendingRequests
 
+-- | Dispatches a generation request to `n` workers in parallel, returning the first successful result.
+-- | NOTE: Losing workers are NOT cancelled. They continue computing until they finish or fail,
+-- | at which point they return to the idle pool. This temporarily increases CPU usage on multi-core
+-- | systems but avoids the overhead of terminating and respawning workers for rapid subsequent requests.
 raceGenerateSudoku :: WorkerPool -> Int -> Variant -> Difficulty -> Aff String
 raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
   rid <- Ref.modify (_ + 1) pool.requestId
@@ -155,7 +155,7 @@ raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
   let toTake = min n (length available)
       dispatching = take toTake available
   
-  Ref.modify_ (filter (\ws -> not (ws `elem''` dispatching))) pool.idleWorkers
+  Ref.modify_ (filter (\ws -> not (ws `elem'` dispatching))) pool.idleWorkers
   
   -- If we need more, try to spawn up to cap
   allCount <- length <$> Ref.read pool.allWorkers
@@ -163,16 +163,13 @@ raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
       canSpawn = min needed (pool.cap - allCount)
   
   newlySpawned <- if canSpawn > 0 
-    then filter isJust <$> traverse (\_ -> spawnAndAdd pool) (1..canSpawn)
+    then catMaybes <$> traverse (\_ -> spawnAndAdd pool) (1..canSpawn)
     else pure []
   
-  -- Unpack Maybes
-  let newlySpawnedDispatching = filterMap' newlySpawned
-  
   -- Mark newly spawned as not idle (they are added to idle in spawnAndAdd, so remove them)
-  Ref.modify_ (filter (\ws -> not (ws `elem''` newlySpawnedDispatching))) pool.idleWorkers
+  Ref.modify_ (filter (\ws -> not (ws `elem'` newlySpawned))) pool.idleWorkers
   
-  let totalDispatching = dispatching <> newlySpawnedDispatching
+  let totalDispatching = dispatching <> newlySpawned
   
   if length totalDispatching == 0 then
     cb (Left $ error "No workers available")
@@ -187,13 +184,3 @@ raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
 -- Helpers
 elem' :: WorkerState -> Array WorkerState -> Boolean
 elem' x xs = length (filter (\y -> y.id == x.id) xs) > 0
-
-elem'' :: WorkerState -> Array WorkerState -> Boolean
-elem'' = elem'
-
-filterMap' :: Array (Maybe WorkerState) -> Array WorkerState
-filterMap' xs = do
-  mx <- xs
-  case mx of
-    Just x -> [x]
-    Nothing -> []

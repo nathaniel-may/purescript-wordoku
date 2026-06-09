@@ -77,12 +77,13 @@ async function runTest() {
     process.exit(1);
   }
 
-  // In the current implementation, we expect workerSpawns to be roughly ITERATIONS * k (where k is workers per request)
-  // After the fix, it should be <= cap (e.g., 4).
+  // In the current implementation, we expect workerSpawns to be <= cap (usually 4-8 depending on CPU).
+  // Churn (re-spawning on every request) would result in workerSpawns matching ITERATIONS (50).
   if (workerSpawns > 10) {
-      console.log("Confirmed high worker churn (Phase 1).");
+      console.error(`FAILURE: High worker churn detected (${workerSpawns} spawns). The pool should reuse workers.`);
+      process.exit(1);
   } else {
-      console.log("Low worker churn detected.");
+      console.log(`SUCCESS: Low worker churn detected (${workerSpawns} spawns).`);
   }
 }
 
