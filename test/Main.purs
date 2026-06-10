@@ -18,14 +18,15 @@ import Sudoku.Internal (Grid, SearchResult(..), cellSetFromPuzzle, gridString, m
 import Sudoku.Internal.Generator (diffNum)
 import Sudoku.Wordlist (wordlist)
 import Test.EncodingTests (encodingTests)
+import Test.RegressionTests (regressionTests)
 import Test.RoutingTests (routingTests)
-import Test.QuickCheck (Result, quickCheck', (<?>))
+import Test.QuickCheck (Result(..), quickCheck', (<?>))
 
 main :: Effect Unit
 main = do
   props <- allProps
   void $ traverse (quickCheck' 1) props -- Run each Effect property once (the iteration is handled inside)
-  let unitTests = encodingTests <> routingTests
+  let unitTests = encodingTests <> routingTests <> regressionTests
   void $ traverse (quickCheck' 1) unitTests
 
 allProps :: Effect (Array Result)
@@ -37,10 +38,14 @@ allProps = sequence
             { puzzle: str } <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
             let solved = solveWordoku UniqueDiagonal str
             let diag = (foldl (<>) "") <<< (map show) <<< diagonalOf $ solved
-            pure $ diag `elem` wordlist
+            pure $ if diag `elem` wordlist then Right unit
+                   else Left ("puzzle=" <> str <> " diagonal=" <> diag)
         )
-        (1 .. 10)
-      pure $ (all identity results) <?> "Wordoku diagonal test failed in one or more iterations"
+        (1 .. 100)
+      pure $ case find isLeft results of
+        Nothing -> Success
+        Just (Left msg) -> Failed ("Wordoku diagonal test failed: " <> msg)
+        Just (Right _) -> Failed "impossible"
 
   , -- solved puzzles have 81 values and 9 of each value.
     do
