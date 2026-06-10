@@ -12,7 +12,9 @@ Difficulty levels map to a fixed number of starting cells:
 | Casual    | 34               |
 | Tricky    | 30               |
 | Difficult | 26               |
-| Challenge | 22               |
+| Challenge | 22 (24 Standard) |
+
+The Standard variant uses 24 starting squares at the Challenge level instead of 22. Its larger search space makes generating a unique puzzle with fewer clues exponentially more expensive, so the extra clues keep generation times usable.
 
 All puzzles with the exception of colorkus can be printed directly through the browser by using the browser's print function. The provided `print.css` will remove buttons.
 
@@ -44,6 +46,25 @@ Run tests:
 npm test
 ```
 
+Benchmark the generation algorithm (single-threaded, prints per-difficulty timing tables):
+```
+npm run bench
+```
+
+### End-to-end tests
+
+`test/e2e/worker_loop.spec.js` is a Puppeteer harness that exercises the worker pool against a real browser. It emulates a throttled Pixel 5, runs 50 generations back-to-back, and fails if the pool churns workers (re-spawning on every request) instead of reusing them. It's a manual check because it drives the running dev server rather than a fixture.
+
+Start the dev server in one terminal:
+```
+npm run develop
+```
+
+Then run the harness in another (expects the app on `http://localhost:1234`):
+```
+npm run test:e2e:manual
+```
+
 Build and run developer server:
 ```
 npm run develop
@@ -62,7 +83,6 @@ Under the hood, npm uses the following tools and target directories:
 Test locally and push to main. Netlify will build with the npm build script and DNS already points the sudoku.nathanielmay.com subdomain to the netlify app.
 
 ## Future work
-- Use web workers to generate puzzles so the UI doesn't freeze up. Most puzzles are generated in less than a second but challenge puzzles often take ~2 seconds.
 - Add CI
 - Add more tests
 - Allow for printing colorkus.

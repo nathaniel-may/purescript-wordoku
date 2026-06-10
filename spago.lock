@@ -22,6 +22,7 @@
             "ordered-collections",
             "prelude",
             "random",
+            "refs",
             "strings",
             "tuples",
             "unfoldable",

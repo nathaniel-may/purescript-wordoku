@@ -4,14 +4,12 @@ import Prelude
 
 import Data.DateTime (diff)
 import Data.DateTime.Instant (toDateTime)
-import Data.Either (Either(..))
 import Data.Enum (class Enum, succ)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
-import Data.Time.Duration (Milliseconds(..))
+import Data.Time.Duration (Milliseconds)
 import Effect (Effect)
-import Effect.Aff (delay, effectCanceler, makeAff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
 import Effect.Now (now)
@@ -24,9 +22,10 @@ import Halogen.HTML.Properties as HP
 import Halogen.Subscription as HS
 import Halogen.VDom.Driver (runUI)
 import Routing (Route(..), buildPath, parsePath)
-import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generate)
+import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generateWithWorkers)
 import Sudoku.Encoding (denormalize, normalize)
 import Sudoku.Internal (chunksOf)
+import Sudoku.Workers (WorkerPool, initPool, workerCount)
 import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget (addEventListener, eventListener)
 import Web.HTML (window)
@@ -43,10 +42,11 @@ type State =
     { selected  :: { d :: Difficulty, g :: Game }
     , displayed :: Maybe { d :: Difficulty, g :: Game }
     , loading   :: Boolean
-    , puzzle    :: String 
+    , puzzle    :: String
+    , pool      :: Maybe WorkerPool
     }
 
-data Action 
+data Action
     = Initialize
     | PathChanged    String
     | Generate
@@ -58,22 +58,23 @@ component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval 
+    , eval: H.mkEval $ H.defaultEval
         { handleAction = handleAction
         , initialize = Just Initialize
         }
     }
 
 initialState :: ∀ i. i -> State
-initialState _ = 
+initialState _ =
     { selected: { d: Tricky, g: Wordoku }
     , displayed: Nothing
     , loading: false
-    , puzzle: emptySudoku 
+    , puzzle: emptySudoku
+    , pool: Nothing
     }
 
 fromState :: State -> Opts
-fromState st = 
+fromState st =
     { variant: if st.selected.g == Wordoku then UniqueDiagonal else Standard
     , values: st.selected.g
     , difficulty: st.selected.d
@@ -92,7 +93,7 @@ tableFrom game s = case game of
 
         rows :: String -> Array (Array (HH.HTML w i))
         rows str = chunksOf 9 $ (\v -> td' [ HH.text (displayChar v) ]) <$> (toCharArray str)
-        
+
         colorkuRows :: String -> Array (Array (HH.HTML w i))
         colorkuRows str = chunksOf 9 $ (\color -> td' [ circle color ]) <$> (toCharArray str)
 
@@ -120,7 +121,7 @@ tableFrom game s = case game of
 
 puzzleLabel :: ∀ w i. State -> HH.HTML w i
 puzzleLabel st = HH.div_ [ HH.label [ HP.id "label" ] [ HH.text (label st.displayed) ] ] where
-    
+
     label :: Maybe { d :: Difficulty, g :: Game } -> String
     label Nothing   = " "
     label (Just dg) = show dg.d <> " " <> show dg.g
@@ -137,18 +138,20 @@ render st =
                 [ HP.class_ (H.ClassName "HContainer") ]
                 [ HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.id "Difficulty"
                     , HP.name (show st.selected.d)
                     , HE.onClick (\_ -> NextDifficulty st.selected.d)
                     ]
                     [ HH.text (show st.selected.d) ]
                 , HH.button
                     [ HP.type_ HP.ButtonButton
+                    , HP.id "Game"
                     , HE.onClick (\_ -> NextGame st.selected.g)
                     ]
                     [ HH.text (show st.selected.g) ]
                 ]
             , HH.div
-                [ HP.class_ (H.ClassName "VContainer") ] 
+                [ HP.class_ (H.ClassName "VContainer") ]
                 [ HH.button
                     [ HP.disabled st.loading
                     , HP.id "Generate"
@@ -157,17 +160,17 @@ render st =
                     ]
                     [ HH.text if st.loading then "Working..." else "Generate" ]
                 ]
-            , HH.div 
-                [ HP.class_ (H.ClassName "label") ] 
-                [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle 
+            , HH.div
+                [ HP.class_ (H.ClassName "label") ]
+                [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle
                 , puzzleLabel st
                 ]
             , HH.div
                 [ HP.class_ (H.ClassName "VContainer") ]
                 [ HH.footer_
-                    [ HH.text "PureScript + Netlify | Source on " 
-                    , HH.a 
-                        [ HP.href "https://github.com/nathaniel-may/purescript-wordoku" ] 
+                    [ HH.text "PureScript + Netlify | Source on "
+                    , HH.a
+                        [ HP.href "https://github.com/nathaniel-may/purescript-wordoku" ]
                         [ HH.text "GitHub" ]
                     ]
                 ]
@@ -177,6 +180,8 @@ render st =
 handleAction :: ∀ o m. MonadAff m => Action -> H.HalogenM State Action () o m Unit
 handleAction = case _ of
     Initialize -> do
+        pool <- H.liftEffect initPool
+        H.modify_ (_ { pool = Just pool })
         { emitter, listener } <- H.liftEffect HS.create
         void $ H.subscribe emitter
         H.liftEffect do
@@ -187,7 +192,7 @@ handleAction = case _ of
                 path <- pathname loc
                 HS.notify listener (PathChanged path)
             addEventListener (EventType "popstate") cb false et
-            
+
             loc <- location w
             path <- pathname loc
             HS.notify listener (PathChanged path)
@@ -204,23 +209,23 @@ handleAction = case _ of
     NextDifficulty d -> H.modify_ (_ { selected { d = cycle Beginner d } })
     Generate -> do
         st <- H.get
-        H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
-        H.modify_ (_ { loading = true })
-        start <- H.liftEffect $ map toDateTime now
-        result <- H.liftAff $ (delay $ Milliseconds 4.0) *> makeAff (\cb -> do
-            val <- generate $ fromState st
-            _   <- cb (Right val)
-            pure <<< effectCanceler $ log "generation canceled")
-        end <- H.liftEffect $ map toDateTime now
-        let { g, d } = st.selected
-        H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle })
-        
-        let normalizedPuzzle = normalize result.key result.puzzle
-            path = buildPath g d normalizedPuzzle result.key
-        
-        H.liftEffect do
-            h <- history =<< window
-            pushState (unsafeToForeign unit) (DocumentTitle "") (URL path) h
-            log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
-            log result.puzzle
+        case st.pool of
+            Nothing -> H.liftEffect <<< log $ "Pool not initialized!"
+            Just pool -> do
+                H.modify_ (_ { loading = true })
+                start <- H.liftEffect $ map toDateTime now
+                n      <- H.liftEffect workerCount
+                H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> " with " <> show n <> " workers..."
+                result <- H.liftAff $ generateWithWorkers pool n (fromState st)
+                end <- H.liftEffect $ map toDateTime now
+                let { g, d } = st.selected
+                H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle })
 
+                let normalizedPuzzle = normalize result.key result.puzzle
+                    path = buildPath g d normalizedPuzzle result.key
+
+                H.liftEffect do
+                    h <- history =<< window
+                    pushState (unsafeToForeign unit) (DocumentTitle "") (URL path) h
+                    log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
+                    log result.puzzle

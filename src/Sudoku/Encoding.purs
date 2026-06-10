@@ -40,15 +40,15 @@ keyToString (WordokuKey w) = w
 parseKey :: Game -> String -> Maybe DecodedKey
 parseKey Sudoku k | k == digits = Just SudokuKey
 parseKey Colorku k | k == "ROYLGBIPV" = Just ColorkuKey
-parseKey Wordoku k 
-  | length k == keyLength 
+parseKey Wordoku k
+  | length k == keyLength
     && length (fromCharArray $ nub $ toCharArray k) == keyLength
     && not ('.' `elem` toCharArray k)
     && all (\c -> c >= 'a' && c <= 'z') (toCharArray k) = Just (WordokuKey k)
 parseKey _ _ = Nothing
 
 normalizeCell :: DecodedKey -> Char -> Char
-normalizeCell dk cell = 
+normalizeCell dk cell =
   let key = keyToString dk
   in case elemIndex cell (toCharArray key) of
     Just i -> fromMaybe '0' $ charAt i digits
@@ -71,7 +71,7 @@ encodePuzzle normalized key = normalized <> keyToString key
 
 decodePuzzle :: Game -> String -> Maybe { puzzle :: String, key :: DecodedKey }
 decodePuzzle g s
-  | length s == totalLength = 
+  | length s == totalLength =
       let { before: puzzle, after: keyStr } = splitAt puzzleLength s
       in if all (\c -> c >= '0' && c <= '9') (toCharArray puzzle)
          then { puzzle, key: _ } <$> parseKey g keyStr

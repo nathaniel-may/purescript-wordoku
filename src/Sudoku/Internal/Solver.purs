@@ -51,8 +51,8 @@ exclusivePossibilities = Array.fromFoldable <<< Map.values
     <<< foldl (\acc (Tuple k v) -> Map.insertWith (<>) v [k] acc) Map.empty
     <<< (\m -> List.fromFoldable (Map.keys m) `List.zip` Map.values m)
     <<< Map.filter ((\x -> x < 4) <<< length)
-    <<< foldl 
-        (\acc (Tuple i xs) -> foldl (\acc' x -> Map.insertWith (<>) x [i] acc') acc xs) 
+    <<< foldl
+        (\acc (Tuple i xs) -> foldl (\acc' x -> Map.insertWith (<>) x [i] acc') acc xs)
         Map.empty
     <<< bindFlipped (\tuple -> case tuple of -- bind as filter
         (Tuple i (Possible xs)) -> [Tuple i xs]
@@ -68,7 +68,7 @@ pruneCellsByFixed :: Array Cell -> Maybe (Array Cell)
 pruneCellsByFixed cells = traverse pruneCell cells
   where
     fixeds :: Array Char
-    fixeds = cells >>= (\cell -> case cell of 
+    fixeds = cells >>= (\cell -> case cell of
         Fixed x -> [x]
         _ -> [])
 
@@ -89,24 +89,24 @@ pruneCellsByExclusives cells = case exclusives of
 
     pruneCell :: Cell -> Maybe Cell
     pruneCell cell@(Fixed _) = Just cell
-    pruneCell cell@(Possible xs) = 
+    pruneCell cell@(Possible xs) =
         if intersection `elem` exclusives
         then makeCell intersection
-        else Just cell 
+        else Just cell
         where
             intersection :: Array Char
             intersection = xs `Array.intersect` allExclusives
 
 pruneGrid' :: Variant -> Grid -> Maybe Grid
 pruneGrid' UniqueDiagonal grid = pruneDiag =<< pruneGrid' Standard grid
-pruneGrid' Standard grid = 
+pruneGrid' Standard grid =
     -- prune cells as rows
     traverse pruneCells grid
-    -- make columns into rows, prune and replace 
+    -- make columns into rows, prune and replace
     >>= map transpose <<< traverse pruneCells <<< transpose
     -- make subgrids rows, prune and replace
     >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
-    
+
 pruneDiag :: Grid -> Maybe Grid
 pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
 
@@ -151,52 +151,52 @@ isGridFilled grid = all isFixed (concat grid)
 
 isInvalidRow :: Row -> Boolean
 isInvalidRow row =
-    let fixeds = row >>= (\cell -> case cell of 
+    let fixeds = row >>= (\cell -> case cell of
             Fixed x -> [x]
             _ -> [])
-        emptyPossibles = (flip any) row (\cell -> case cell of 
+        emptyPossibles = (flip any) row (\cell -> case cell of
             Possible [] -> true
             _ -> false)
-    in emptyPossibles || (not isUnique $ fixeds) 
+    in emptyPossibles || (not isUnique $ fixeds)
 
 isGridInvalid :: Variant -> Grid -> Boolean
-isGridInvalid UniqueDiagonal grid = 
-    isInvalidRow (diagonalOf grid) 
+isGridInvalid UniqueDiagonal grid =
+    isInvalidRow (diagonalOf grid)
     || isGridInvalid Standard grid
-isGridInvalid Standard grid = 
-    any isInvalidRow grid 
-    || any isInvalidRow (transpose grid) 
+isGridInvalid Standard grid =
+    any isInvalidRow grid
+    || any isInvalidRow (transpose grid)
     || any isInvalidRow (subGridsToRows grid)
 
-{- 
+{-
 Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
--} 
+-}
 solve :: Variant -> Grid -> Maybe Grid
 solve v grid = solve' =<< (pruneGrid v $ grid) where
     solve' g
       | isGridInvalid v g = Nothing
       | isGridFilled g  = Just g
-      | otherwise       = nextGrids g >>= (\(Tuple grid1 grid2) -> 
+      | otherwise       = nextGrids g >>= (\(Tuple grid1 grid2) ->
             case solve v grid1 of
                 solution@(Just _) -> solution
                 _ -> solve v grid2
         )
 
-{- 
+{-
 Takes in a puzzle and finds all solutions.
--} 
+-}
 solveAll :: Variant -> Grid -> Array Grid
 solveAll v grid = concat <<< Array.fromFoldable $ solveAll' <$> (pruneGrid v $ grid) where
     solveAll' :: Grid -> Array Grid
     solveAll' g
       | isGridInvalid v g = []
       | isGridFilled g  = [g]
-      | otherwise = 
-        concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) -> 
+      | otherwise =
+        concat <<< Array.fromFoldable $ nextGrids g <#> (\(Tuple grid1 grid2) ->
             solveAll v grid1 <> solveAll v grid2
         )
 
-{- 
+{-
 Takes in a puzzle, determines if it has a solution, and if that solution is unique:
 - Nothing = puzzle has no solution
 - Just (Left x) = Grid x is the only unique solution
@@ -204,7 +204,7 @@ Takes in a puzzle, determines if it has a solution, and if that solution is uniq
 
 To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
 or exit early when it finds a second solution. For a fast single solution use `solve`.
--} 
+-}
 solveUnique :: Variant -> Grid -> SearchResult Grid
 solveUnique v grid = searchResult $ solveUnique' v grid where
 

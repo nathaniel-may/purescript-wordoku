@@ -20,7 +20,9 @@
     "ps-install": "spago install",
     "build": "spago build && parcel build index.html && cp _redirects dist/",
     "develop": "spago build && parcel index.html",
-    "test": "spago test"
+    "test": "spago test",
+    "bench": "spago build && node bench/main.mjs",
+    "test:e2e:manual": "node test/e2e/worker_loop.spec.js"
   },
   "repository": {
     "type": "git",
@@ -28,6 +30,8 @@
   },
   "devDependencies": {
     "@parcel/packager-raw-url": "^2.16.4",
-    "@parcel/transformer-webmanifest": "^2.16.4"
+    "@parcel/transformer-webmanifest": "^2.16.4",
+    "puppeteer": "^25.1.0",
+    "tinybench": "^6.0.2"
   }
 }

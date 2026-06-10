@@ -15,8 +15,8 @@ import Sudoku.Internal (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(.
 import Sudoku.Internal.Solver (solve, solveUnique)
 import Sudoku.Wordlist (wordlist)
 
-type Opts = { 
-      variant    :: Variant 
+type Opts = {
+      variant    :: Variant
     , values     :: Game
     , difficulty :: Difficulty }
 
@@ -67,7 +67,7 @@ generate opts = case opts.values of
     where
 
     game :: Opts -> Effect String
-    game opts = generateSudoku opts.variant opts.difficulty
+    game opts' = generateSudoku opts'.variant opts'.difficulty
 
     wordMap :: String -> String -> Map Char Char
     wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
@@ -75,7 +75,7 @@ generate opts = case opts.values of
 
     -- keys become values
     mapValues :: Map Char Char -> String -> String
-    mapValues m str = foldl 
+    mapValues m str = foldl
         (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
         ""
         (toCharArray str)
@@ -85,30 +85,25 @@ generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to ge
     cellSet <- mixCellSet numbers
     let mFilled = solve restrictDiag =<< (hush $ readGrid cellSet emptySudoku)
     randIdxs <- randomArray (0..80)
-    pure $ (reduceBy cellSet (81 - diffNum difficulty) randIdxs) =<< mFilled 
+    pure $ (reduceBy cellSet (81 - diffNum restrictDiag difficulty) randIdxs) =<< mFilled
     where
         reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
-        reduceBy cs count idxs grid = if count > 64 then Nothing else do
-            let result = solveUnique restrictDiag grid
-            { head: idx, tail: rands } <- uncons idxs
-            case result of
-                -- check that the given grid has a unique solution. If it doesn't, backtracking won't help.
-                Unique _ -> 
-                    if (count <= 0) 
-                    then Just grid
-                    -- try removing the next one
-                    else case reduceBy cs (count - 1) rands (removeAt cs idx grid) of
-                        -- backtrack
-                        Nothing -> reduceBy cs count rands grid
-                        Just grid' -> Just grid'
-                -- backtracking won't help if the board doesn't already have a unique solution
-                (NotUnique _ _) -> Nothing
-                NoSolution -> Nothing
+        reduceBy cs count idxs grid =
+            if (count <= 0) then Just grid
+            else do
+                { head: idx, tail: rands } <- uncons idxs
+                let nextGrid = removeAt cs idx grid
+                case solveUnique restrictDiag nextGrid of
+                    Unique _ ->
+                        case reduceBy cs (count - 1) rands nextGrid of
+                            Nothing -> reduceBy cs count rands grid
+                            Just grid' -> Just grid'
+                    _ -> reduceBy cs count rands grid
 
         removeAt :: CellSet -> Int -> Grid -> Grid
-        removeAt (CellSet _ allValues) idx grid = 
+        removeAt (CellSet _ allValues) idx grid =
             replace2D idx (Possible allValues) grid
-        
+
         toStringOrLoop :: Maybe Grid -> Effect String
         toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
         toStringOrLoop (Just grid) = pure $ gridString grid
@@ -124,13 +119,19 @@ colorChars = ['R','O','Y','L','G','B','I','P','V']
 
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail
-    <<< index wordlist 
+    <<< index wordlist
     <$> randomInt 0 (length wordlist - 1)
 
-diffNum :: Difficulty -> Int
-diffNum Beginner  = 40
-diffNum Casual    = 34
-diffNum Tricky    = 30
-diffNum Difficult = 26
-diffNum Challenge = 22
-
+diffNum :: Variant -> Difficulty -> Int
+diffNum _ Beginner  = 40
+diffNum _ Casual    = 34
+diffNum _ Tricky    = 30
+diffNum _ Difficult = 26
+-- the UniqueDiagonal variant restricts the search space enough to make
+-- the constraints that puzzles must have unique solutions _easier_ to find
+-- than a is the case in a Standard puzzle.
+diffNum UniqueDiagonal Challenge = 22
+-- the Standard variant requires significantly more computation to find unique
+-- solutions at smaller clue numbers, so we slightly increase the number
+-- of clues to improve runtimes
+diffNum Standard Challenge = 24

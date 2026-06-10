@@ -1,6 +1,6 @@
 module Sudoku.Wordlist where
 
--- all words contain exactly 9 unique characters sourced 
+-- all words contain exactly 9 unique characters sourced
 -- from an English language dictionary
 wordlist :: Array String
 wordlist =
@@ -3332,5 +3332,5 @@ wordlist =
     , "zygantrum"
     , "zygomatic"
     , "zygosperm"
-    , "zymogenic" 
+    , "zymogenic"
     ]
