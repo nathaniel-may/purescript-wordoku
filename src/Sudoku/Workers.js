@@ -5,13 +5,17 @@ const isMobile = () => {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 };
 
+// worker pool is required to avoid browser detecting and killing rapid worker creations
 export const workerCountImpl = () => {
-  if (typeof navigator !== "undefined" && navigator.hardwareConcurrency) {
-    // worker pool is required to avoid browser detecting and killing rapid worker creations
-    // 8 successfully ran manually on mobile so we attempt up to 8
-    return Math.min(8, navigator.hardwareConcurrency);
+  if (navigator.hardwareConcurrency) {
+    if (!isMobile()) {
+      return navigator.hardwareConcurrency;
+    }
+    // Avoiding OS throttling by only using half of all available cores on mobile
+    return Math.floor(navigator.hardwareConcurrency / 2);
   }
-  return 2;
+  // mobile-friendly default of 4 workers
+  return 4;
 };
 
 export const spawnWorkerImpl = (onErr) => () => {
