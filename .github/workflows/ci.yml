@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run ps-install
+      - run: npm run test
+      - run: npm run format:check
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run ps-install
+      - run: npm run build
+
+      - name: Bundle size check
+        run: |
+          total=$(find dist -name "*.js" -exec wc -c {} + | tail -1 | awk '{print $1}')
+          limit=614400
+          echo "Total JS: ${total} bytes / ${limit} byte limit"
+          if [ "$total" -gt "$limit" ]; then
+            echo "FAIL: JS bundle size exceeded"
+            exit 1
+          fi
+
+      - name: Start server
+        run: npx serve dist -p 1234 &
+
+      - name: Wait for server
+        run: until curl -s http://localhost:1234 > /dev/null; do sleep 1; done
+
+      - name: E2E test
+        run: node test/e2e/worker_loop.spec.js
