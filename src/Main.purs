@@ -42,11 +42,11 @@ type State =
     { selected  :: { d :: Difficulty, g :: Game }
     , displayed :: Maybe { d :: Difficulty, g :: Game }
     , loading   :: Boolean
-    , puzzle    :: String 
+    , puzzle    :: String
     , pool      :: Maybe WorkerPool
     }
 
-data Action 
+data Action
     = Initialize
     | PathChanged    String
     | Generate
@@ -58,23 +58,23 @@ component =
   H.mkComponent
     { initialState
     , render
-    , eval: H.mkEval $ H.defaultEval 
+    , eval: H.mkEval $ H.defaultEval
         { handleAction = handleAction
         , initialize = Just Initialize
         }
     }
 
 initialState :: ∀ i. i -> State
-initialState _ = 
+initialState _ =
     { selected: { d: Tricky, g: Wordoku }
     , displayed: Nothing
     , loading: false
-    , puzzle: emptySudoku 
+    , puzzle: emptySudoku
     , pool: Nothing
     }
 
 fromState :: State -> Opts
-fromState st = 
+fromState st =
     { variant: if st.selected.g == Wordoku then UniqueDiagonal else Standard
     , values: st.selected.g
     , difficulty: st.selected.d
@@ -93,7 +93,7 @@ tableFrom game s = case game of
 
         rows :: String -> Array (Array (HH.HTML w i))
         rows str = chunksOf 9 $ (\v -> td' [ HH.text (displayChar v) ]) <$> (toCharArray str)
-        
+
         colorkuRows :: String -> Array (Array (HH.HTML w i))
         colorkuRows str = chunksOf 9 $ (\color -> td' [ circle color ]) <$> (toCharArray str)
 
@@ -121,7 +121,7 @@ tableFrom game s = case game of
 
 puzzleLabel :: ∀ w i. State -> HH.HTML w i
 puzzleLabel st = HH.div_ [ HH.label [ HP.id "label" ] [ HH.text (label st.displayed) ] ] where
-    
+
     label :: Maybe { d :: Difficulty, g :: Game } -> String
     label Nothing   = " "
     label (Just dg) = show dg.d <> " " <> show dg.g
@@ -151,7 +151,7 @@ render st =
                     [ HH.text (show st.selected.g) ]
                 ]
             , HH.div
-                [ HP.class_ (H.ClassName "VContainer") ] 
+                [ HP.class_ (H.ClassName "VContainer") ]
                 [ HH.button
                     [ HP.disabled st.loading
                     , HP.id "Generate"
@@ -160,17 +160,17 @@ render st =
                     ]
                     [ HH.text if st.loading then "Working..." else "Generate" ]
                 ]
-            , HH.div 
-                [ HP.class_ (H.ClassName "label") ] 
-                [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle 
+            , HH.div
+                [ HP.class_ (H.ClassName "label") ]
+                [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle
                 , puzzleLabel st
                 ]
             , HH.div
                 [ HP.class_ (H.ClassName "VContainer") ]
                 [ HH.footer_
-                    [ HH.text "PureScript + Netlify | Source on " 
-                    , HH.a 
-                        [ HP.href "https://github.com/nathaniel-may/purescript-wordoku" ] 
+                    [ HH.text "PureScript + Netlify | Source on "
+                    , HH.a
+                        [ HP.href "https://github.com/nathaniel-may/purescript-wordoku" ]
                         [ HH.text "GitHub" ]
                     ]
                 ]
@@ -192,7 +192,7 @@ handleAction = case _ of
                 path <- pathname loc
                 HS.notify listener (PathChanged path)
             addEventListener (EventType "popstate") cb false et
-            
+
             loc <- location w
             path <- pathname loc
             HS.notify listener (PathChanged path)
@@ -220,13 +220,12 @@ handleAction = case _ of
                 end <- H.liftEffect $ map toDateTime now
                 let { g, d } = st.selected
                 H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle })
-                
+
                 let normalizedPuzzle = normalize result.key result.puzzle
                     path = buildPath g d normalizedPuzzle result.key
-                
+
                 H.liftEffect do
                     h <- history =<< window
                     pushState (unsafeToForeign unit) (DocumentTitle "") (URL path) h
                     log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
                     log result.puzzle
-

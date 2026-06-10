@@ -71,25 +71,25 @@ gridString :: Grid -> String
 gridString = joinWith "" <<< map (joinWith "" <<< map show)
 
 mkCellSet :: Char -> Array Char -> Either String CellSet
-mkCellSet empty allValues 
+mkCellSet empty allValues
     | length allValues /= 9 = Left "char set must have exactly 9 characters"
     | empty `elem` allValues = Left "the empty character cannot also be in the list of values"
     | length (unique allValues) /= length allValues = Left "all characters must be unique"
     | otherwise = Right (CellSet empty allValues)
 
 cellSetFromPuzzle :: String -> Either String CellSet
-cellSetFromPuzzle str = mkCellSet '.' <<< delete '.' $ foldl 
-    (\arr c -> if c `elem` arr then arr else cons c arr) 
-    [] 
+cellSetFromPuzzle str = mkCellSet '.' <<< delete '.' $ foldl
+    (\arr c -> if c `elem` arr then arr else cons c arr)
+    []
     (toCharArray str)
 
 readCell :: CellSet -> Char -> Either String Cell
-readCell (CellSet empty allValues) v = 
-    if v == empty 
+readCell (CellSet empty allValues) v =
+    if v == empty
     then Right $ Possible allValues
-    else if v `elem` allValues 
-        then Right (Fixed v) 
-        else Left $ "char " <> show v <> "is not one of " <> show allValues 
+    else if v `elem` allValues
+        then Right (Fixed v)
+        else Left $ "char " <> show v <> "is not one of " <> show allValues
 
 readGrid :: CellSet -> String -> Either String Grid
 readGrid cellSet s =
@@ -115,12 +115,12 @@ showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((join
 
 -- replace an element by its index [0,80] in a 9x9 grid
 replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
-replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
+replace2D i v = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9))
     in replaceAt x (replaceAt y (const v))
 
 -- retrieve an element by its index [0,80] in a 9x9 grid
 index2D :: ∀ a. Array (Array a) -> Int -> Maybe a
-index2D arr i = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9)) 
+index2D arr i = let (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9))
     in (\arr' -> index arr' x) =<< (index arr y)
 
 replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a

@@ -1,9 +1,9 @@
-module Sudoku.Generator 
+module Sudoku.Generator
     ( module Exports
     , generate
     , generateWithWorkers
     , randomWord
-    ) 
+    )
 where
 
 import Prelude
@@ -71,12 +71,12 @@ wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` t
 
 -- keys become values
 mapValues :: Map Char Char -> String -> String
-mapValues m str = foldl 
+mapValues m str = foldl
     (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
     ""
     (toCharArray str)
 
 randomWord :: Unit -> Effect String
 randomWord _ = fromMaybe "" -- random access won't fail
-    <<< index wordlist 
+    <<< index wordlist
     <$> randomInt 0 (length wordlist - 1)

@@ -39,24 +39,24 @@ parseDifficulty s = case toLower s of
   _ -> Nothing
 
 parsePath :: String -> Route
-parsePath path = 
+parsePath path =
   let segments = filter (_ /= "") (split (Pattern "/") path)
   in case segments of
     [] -> Home
-    [gStr] -> 
+    [gStr] ->
       case parseGame gStr of
         Just g -> GameRoute g
         Nothing -> Home
-    [gStr, dStr] -> 
+    [gStr, dStr] ->
       case parseGame gStr of
-        Just g -> 
+        Just g ->
           case parseDifficulty dStr of
             Just d -> DifficultyRoute g d
             Nothing -> GameRoute g
         Nothing -> Home
-    [gStr, dStr, pStr] -> 
+    [gStr, dStr, pStr] ->
       case parseGame gStr, parseDifficulty dStr of
-        Just g, Just d -> 
+        Just g, Just d ->
           case decodePuzzle g pStr of
             Just { puzzle, key } -> PuzzleRoute g d puzzle key
             _ -> DifficultyRoute g d

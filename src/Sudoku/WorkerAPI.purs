@@ -8,7 +8,7 @@ import Sudoku.Internal.Generator (Difficulty(..), generateSudoku)
 
 -- | Returns a record with either the result or an error message.
 generateStringly :: String -> String -> Effect { result :: String, error :: String }
-generateStringly variantStr difficultyStr = 
+generateStringly variantStr difficultyStr =
   case parseVariant variantStr, parseDifficulty difficultyStr of
     Just v, Just d -> do
       res <- generateSudoku v d

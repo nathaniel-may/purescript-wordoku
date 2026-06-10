@@ -1,4 +1,4 @@
-module Sudoku.Workers 
+module Sudoku.Workers
   ( WorkerPool
   , WorkerState
   , PendingRequest
@@ -27,18 +27,18 @@ import Sudoku.Internal.Generator (Difficulty)
 
 foreign import data Worker :: Type
 
-type PendingRequest = 
+type PendingRequest =
   { cb :: Either Error String -> Effect Unit
-  , outstanding :: Int 
+  , outstanding :: Int
   }
 
-type WorkerState = 
+type WorkerState =
   { worker :: Worker
   , id     :: Int
   , jobId  :: Ref (Maybe Int)
   }
 
-type WorkerPool = 
+type WorkerPool =
   { idleWorkers      :: Ref (Array WorkerState)
   , allWorkers       :: Ref (Array WorkerState)
   , requestId        :: Ref Int
@@ -99,7 +99,7 @@ handleMessage pool ws msg = do
   all <- Ref.read pool.allWorkers
   when (ws `elem'` all) do
     Ref.modify_ (_ <> [ws]) pool.idleWorkers
-  
+
   -- Lookup and resolve
   pending <- Ref.read pool.pendingRequests
   case Map.lookup msg.id pending of
@@ -120,7 +120,7 @@ handleWorkerHardwareError pool ws err = do
   terminateWorkerImpl ws.worker
   Ref.modify_ (filter (\x -> x.id /= ws.id)) pool.allWorkers
   Ref.modify_ (filter (\x -> x.id /= ws.id)) pool.idleWorkers
-  
+
   -- If it was on a job, decrement that job's outstanding count
   mjid <- Ref.read ws.jobId
   case mjid of
@@ -149,28 +149,28 @@ handleFailure pool rid = do
 raceGenerateSudoku :: WorkerPool -> Int -> Variant -> Difficulty -> Aff String
 raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
   rid <- Ref.modify (_ + 1) pool.requestId
-  
+
   -- Acquire workers
   available <- Ref.read pool.idleWorkers
   let toTake = min n (length available)
       dispatching = take toTake available
-  
+
   Ref.modify_ (filter (\ws -> not (ws `elem'` dispatching))) pool.idleWorkers
-  
+
   -- If we need more, try to spawn up to cap
   allCount <- length <$> Ref.read pool.allWorkers
   let needed = n - (length dispatching)
       canSpawn = min needed (pool.cap - allCount)
-  
-  newlySpawned <- if canSpawn > 0 
+
+  newlySpawned <- if canSpawn > 0
     then catMaybes <$> traverse (\_ -> spawnAndAdd pool) (1..canSpawn)
     else pure []
-  
+
   -- Mark newly spawned as not idle (they are added to idle in spawnAndAdd, so remove them)
   Ref.modify_ (filter (\ws -> not (ws `elem'` newlySpawned))) pool.idleWorkers
-  
+
   let totalDispatching = dispatching <> newlySpawned
-  
+
   if length totalDispatching == 0 then
     cb (Left $ error "No workers available")
   else do

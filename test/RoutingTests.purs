@@ -11,7 +11,7 @@ import Sudoku.Internal.Generator (Difficulty(..), Game(..))
 import Test.QuickCheck (Result, (<?>))
 
 routingTests :: Array Result
-routingTests = 
+routingTests =
     [ (parsePath "/" == Home) <?> "parsePath '/' failed"
     , (parsePath "/wordoku" == GameRoute Wordoku) <?> "parsePath '/wordoku' failed"
     , (parsePath "/wordoku/tricky" == DifficultyRoute Wordoku Tricky) <?> "parsePath '/wordoku/tricky' failed"
@@ -19,7 +19,7 @@ routingTests =
     , (parsePath "/unknown" == Home) <?> "parsePath '/unknown' failed"
     , (parsePath "/wordoku/unknown" == GameRoute Wordoku) <?> "parsePath '/wordoku/unknown' failed"
     , (parsePath "/wordoku/tricky/too-short" == DifficultyRoute Wordoku Tricky) <?> "parsePath '/wordoku/tricky/too-short' failed"
-    
+
     , let p = repeat 81 '0'
           badKey = "ROYLGBIPV" -- Colorku key for a Sudoku game
           repeat n c = foldr (\_ s -> s <> singleton c) "" (1..n)

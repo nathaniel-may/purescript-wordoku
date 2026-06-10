@@ -4,7 +4,7 @@ module Sudoku.Solver
     ( module Exports
     , solve
     , solveAll
-    , solveUnique) 
+    , solveUnique)
 where
 
 import Prelude
@@ -17,7 +17,7 @@ import Sudoku.Internal.Solver as Internal
 
 
 -- | Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
--- | 
+-- |
 -- | usage:
 -- | > puzzle = "4.58.....8361..47.........3..49...26763.8.519529.1683........91..82.1.5..9..57348"
 -- | > solve numbers Standard puzzle
@@ -30,7 +30,7 @@ solve cs v input = do
 
 
 -- | Takes in a puzzle and finds all solutions.
--- | 
+-- |
 -- | usage:
 -- | > puzzle = "4.58.....8361..47.........3..49...26763.8.519529.1683........91..82.1.5..9..57348"
 -- | > solveAll numbers Standard puzzle
@@ -40,15 +40,15 @@ solveAll cs v input = do
     puzzle <- readGrid cs input
     let solution = Internal.solveAll v puzzle
     pure $ map gridString solution
- 
+
 -- | Takes in a puzzle, determines if it has a solution, and if that solution is unique:
 -- | - Nothing = puzzle has no solution
 -- | - Just (Left x) = Grid x is the only unique solution
 -- | - Just (Right (Tuple x y)) = x and y are both valid solutions so this puzzle does not have a unique solution
--- | 
+-- |
 -- | To determine uniqueness, it must attempt to visit every solution in the space and find all but one invalid
--- | or exit early when it finds a second solution. For a fast single solution use `solve`. 
--- | 
+-- | or exit early when it finds a second solution. For a fast single solution use `solve`.
+-- |
 -- | usage:
 -- | > puzzle = "4.58.....8361..47.........3..49...26763.8.519529.1683........91..82.1.5..9..57348"
 -- | > solveUnique numbers Standard puzzle
