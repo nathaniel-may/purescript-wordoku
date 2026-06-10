@@ -100,6 +100,13 @@ handleMessage pool ws msg = do
   when (ws `elem'` all) do
     Ref.modify_ (_ <> [ws]) pool.idleWorkers
 
+  -- Log when all workers are idle and no pending requests remain
+  idle <- Ref.read pool.idleWorkers
+  all' <- Ref.read pool.allWorkers
+  pending' <- Ref.read pool.pendingRequests
+  when (length idle == length all' && Map.isEmpty pending') do
+    log $ "Worker pool idle (" <> show (length all') <> " workers)"
+
   -- Lookup and resolve
   pending <- Ref.read pool.pendingRequests
   case Map.lookup msg.id pending of
