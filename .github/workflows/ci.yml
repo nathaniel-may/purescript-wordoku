@@ -108,6 +108,13 @@ jobs:
           key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
         if: steps.npm-cache.outputs.cache-hit != 'true'
+      - uses: actions/cache@v4
+        id: puppeteer-cache
+        with:
+          path: ~/.cache/puppeteer
+          key: puppeteer-${{ hashFiles('package-lock.json') }}
+      - run: npx puppeteer browsers install chrome
+        if: steps.puppeteer-cache.outputs.cache-hit != 'true'
       - uses: actions/download-artifact@v4
         with:
           name: dist
