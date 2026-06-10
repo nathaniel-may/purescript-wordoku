@@ -11,8 +11,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/spago
+          key: spago-${{ hashFiles('spago.lock') }}
       - run: npm run ps-install
       - run: npm run build
       - uses: actions/upload-artifact@v4
@@ -31,8 +40,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
+        if: steps.npm-cache.outputs.cache-hit != 'true'
       - run: npm run format:check
 
   unit:
@@ -43,8 +57,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/spago
+          key: spago-${{ hashFiles('spago.lock') }}
       - run: npm run ps-install
       - uses: actions/download-artifact@v4
         with:
@@ -78,8 +101,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - run: npm ci
+        if: steps.npm-cache.outputs.cache-hit != 'true'
       - uses: actions/download-artifact@v4
         with:
           name: dist
