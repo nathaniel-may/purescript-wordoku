@@ -73,6 +73,7 @@ initPool = do
   -- Pre-warm all workers
   for_ (1..pool.cap) \_ -> do
     void $ spawnAndAdd pool
+  log $ "Warmed " <> show pool.cap <> " workers"
   pure pool
 
 spawnAndAdd :: WorkerPool -> Effect (Maybe WorkerState)

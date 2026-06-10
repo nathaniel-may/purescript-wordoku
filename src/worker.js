@@ -1,10 +1,7 @@
 import { generateStringly } from "../output/Sudoku.WorkerAPI/index.js";
 
-console.log("Sudoku Worker: Module loaded");
-
 self.onmessage = (e) => {
   const { id, variant, difficulty } = e.data;
-  console.log("Sudoku Worker: Received request", { id, variant, difficulty });
   try {
     const { result, error } = generateStringly(variant)(difficulty)();
     if (error) {

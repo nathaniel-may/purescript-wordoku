@@ -212,10 +212,10 @@ handleAction = case _ of
         case st.pool of
             Nothing -> H.liftEffect <<< log $ "Pool not initialized!"
             Just pool -> do
-                H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> "..."
                 H.modify_ (_ { loading = true })
                 start <- H.liftEffect $ map toDateTime now
                 n      <- H.liftEffect workerCount
+                H.liftEffect <<< log $ "generating a " <> show st.selected.d <> " " <> show st.selected.g <> " with " <> show n <> " workers..."
                 result <- H.liftAff $ generateWithWorkers pool n (fromState st)
                 end <- H.liftEffect $ map toDateTime now
                 let { g, d } = st.selected
