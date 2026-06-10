@@ -70,8 +70,8 @@ initPool = do
   workerId <- Ref.new 0
   pendingRequests <- Ref.new Map.empty
   let pool = { idleWorkers, allWorkers, requestId, workerId, pendingRequests, cap }
-  -- Pre-warm 2 workers
-  for_ (1..2) \_ -> do
+  -- Pre-warm all workers
+  for_ (1..pool.cap) \_ -> do
     void $ spawnAndAdd pool
   pure pool
 

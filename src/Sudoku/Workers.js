@@ -7,8 +7,9 @@ const isMobile = () => {
 
 export const workerCountImpl = () => {
   if (typeof navigator !== "undefined" && navigator.hardwareConcurrency) {
-    const cap = isMobile() ? 2 : 4;
-    return Math.min(cap, navigator.hardwareConcurrency);
+    // worker pool is required to avoid browser detecting and killing rapid worker creations
+    // 8 successfully ran manually on mobile so we attempt up to 8
+    return Math.min(8, navigator.hardwareConcurrency);
   }
   return 2;
 };
