@@ -4,20 +4,7 @@ on:
   pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-      - run: npm ci
-      - run: npm run ps-install
-      - run: npm run test
-      - run: npm run format:check
-
-  e2e:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +15,51 @@ jobs:
       - run: npm ci
       - run: npm run ps-install
       - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: output
+          path: output/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run format:check
+
+  unit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run ps-install
+      - uses: actions/download-artifact@v4
+        with:
+          name: output
+          path: output/
+      - run: npm run test
+
+  bundle:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
       - name: Bundle size check
         run: |
           total=$(find dist -name "*.js" -exec wc -c {} + | tail -1 | awk '{print $1}')
@@ -39,11 +70,23 @@ jobs:
             exit 1
           fi
 
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
       - name: Start server
         run: npx serve dist -p 1234 &
-
       - name: Wait for server
         run: until curl -s http://localhost:1234 > /dev/null; do sleep 1; done
-
-      - name: E2E test
+      - name: Smoke test
         run: node test/e2e/worker_loop.spec.js
