@@ -1,2 +1,2 @@
-const { main } = require('./output/Main');
+const { main } = require("./output/Main");
 main();

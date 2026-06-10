@@ -42,17 +42,19 @@ parseKey Sudoku k | k == digits = Just SudokuKey
 parseKey Colorku k | k == "ROYLGBIPV" = Just ColorkuKey
 parseKey Wordoku k
   | length k == keyLength
-    && length (fromCharArray $ nub $ toCharArray k) == keyLength
-    && not ('.' `elem` toCharArray k)
-    && all (\c -> c >= 'a' && c <= 'z') (toCharArray k) = Just (WordokuKey k)
+      && length (fromCharArray $ nub $ toCharArray k) == keyLength
+      && not ('.' `elem` toCharArray k)
+      && all (\c -> c >= 'a' && c <= 'z') (toCharArray k) = Just (WordokuKey k)
 parseKey _ _ = Nothing
 
 normalizeCell :: DecodedKey -> Char -> Char
 normalizeCell dk cell =
-  let key = keyToString dk
-  in case elemIndex cell (toCharArray key) of
-    Just i -> fromMaybe '0' $ charAt i digits
-    Nothing -> '0'
+  let
+    key = keyToString dk
+  in
+    case elemIndex cell (toCharArray key) of
+      Just i -> fromMaybe '0' $ charAt i digits
+      Nothing -> '0'
 
 normalize :: DecodedKey -> String -> String
 normalize dk puzzle = fromCharArray $ map (normalizeCell dk) (toCharArray puzzle)
@@ -60,11 +62,11 @@ normalize dk puzzle = fromCharArray $ map (normalizeCell dk) (toCharArray puzzle
 denormalize :: DecodedKey -> String -> String
 denormalize dk normalized = fromCharArray $ map denormalizeCell (toCharArray normalized)
   where
-    key = keyToString dk
-    denormalizeCell '0' = '.'
-    denormalizeCell c = fromMaybe '.' do
-      i <- elemIndex c (toCharArray digits)
-      charAt i key
+  key = keyToString dk
+  denormalizeCell '0' = '.'
+  denormalizeCell c = fromMaybe '.' do
+    i <- elemIndex c (toCharArray digits)
+    charAt i key
 
 encodePuzzle :: String -> DecodedKey -> String
 encodePuzzle normalized key = normalized <> keyToString key
@@ -72,8 +74,9 @@ encodePuzzle normalized key = normalized <> keyToString key
 decodePuzzle :: Game -> String -> Maybe { puzzle :: String, key :: DecodedKey }
 decodePuzzle g s
   | length s == totalLength =
-      let { before: puzzle, after: keyStr } = splitAt puzzleLength s
-      in if all (\c -> c >= '0' && c <= '9') (toCharArray puzzle)
-         then { puzzle, key: _ } <$> parseKey g keyStr
-         else Nothing
+      let
+        { before: puzzle, after: keyStr } = splitAt puzzleLength s
+      in
+        if all (\c -> c >= '0' && c <= '9') (toCharArray puzzle) then { puzzle, key: _ } <$> parseKey g keyStr
+        else Nothing
   | otherwise = Nothing

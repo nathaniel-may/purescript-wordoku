@@ -27,26 +27,31 @@ All puzzles with the exception of colorkus can be printed directly through the b
 **Prerequisites:** `git` must be on your PATH. If you use Zed on macOS, ensure `/opt/homebrew/bin` appears before `/Applications/Zed.app/Contents/MacOS` in your PATH, since Zed bundles a stripped-down git that lacks HTTPS transport.
 
 Install npm tools: (only needs to be run once)
+
 ```
 npm install
 ```
 
 Install PureScript dependencies:
+
 ```
 npm run ps-install
 ```
 
 Build the app with visible compiler errors:
+
 ```
 npx spago build
 ```
 
 Run tests:
+
 ```
 npm test
 ```
 
 Benchmark the generation algorithm (single-threaded, prints per-difficulty timing tables):
+
 ```
 npm run bench
 ```
@@ -56,16 +61,19 @@ npm run bench
 `test/e2e/worker_loop.spec.js` is a Puppeteer harness that exercises the worker pool against a real browser. It emulates a throttled Pixel 5, runs 50 generations back-to-back, and fails if the pool churns workers (re-spawning on every request) instead of reusing them. It's a manual check because it drives the running dev server rather than a fixture.
 
 Start the dev server in one terminal:
+
 ```
 npm run develop
 ```
 
 Then run the harness in another (expects the app on `http://localhost:1234`):
+
 ```
 npm run test:e2e:manual
 ```
 
 Build and run developer server:
+
 ```
 npm run develop
 ```
@@ -78,11 +86,12 @@ Under the hood, npm uses the following tools and target directories:
 | `spago`  | install and build PureScript deps, tests | output/       |
 | `parcel` | bundle for deployment                    | dist/         |
 
-
 ## Deployment
+
 Test locally and push to main. Netlify will build with the npm build script and DNS already points the sudoku.nathanielmay.com subdomain to the netlify app.
 
 ## Future work
+
 - Add CI
 - Add more tests
 - Allow for printing colorkus.

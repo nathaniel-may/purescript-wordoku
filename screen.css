@@ -1,249 +1,249 @@
 body {
-    font-family: Verdana, Geneva, Tahoma, sans-serif;
-    color: #444
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  color: #444;
 }
 
 h1 {
-    font-size: 2.3em;
-    text-align : center;
-    color: #333
+  font-size: 2.3em;
+  text-align: center;
+  color: #333;
 }
 
 .VContainer {
-    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
-    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
-    display: -ms-flexbox;      /* TWEENER - IE 10 */
-    display: -webkit-flex;     /* NEW - Chrome */
-    display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
-    flex-direction: vertical;
-    justify-content: center;
+  display: -webkit-box; /* OLD - iOS 6-, Safari 3.1-6 */
+  display: -moz-box; /* OLD - Firefox 19- (buggy but mostly works) */
+  display: -ms-flexbox; /* TWEENER - IE 10 */
+  display: -webkit-flex; /* NEW - Chrome */
+  display: flex; /* NEW, Spec - Opera 12.1, Firefox 20+ */
+  flex-direction: vertical;
+  justify-content: center;
 }
 
 .HContainer {
-    display: -webkit-box;      /* OLD - iOS 6-, Safari 3.1-6 */
-    display: -moz-box;         /* OLD - Firefox 19- (buggy but mostly works) */
-    display: -ms-flexbox;      /* TWEENER - IE 10 */
-    display: -webkit-flex;     /* NEW - Chrome */
-    display: flex;             /* NEW, Spec - Opera 12.1, Firefox 20+ */
-    flex-direction: horizontal;
-    justify-content: center;
+  display: -webkit-box; /* OLD - iOS 6-, Safari 3.1-6 */
+  display: -moz-box; /* OLD - Firefox 19- (buggy but mostly works) */
+  display: -ms-flexbox; /* TWEENER - IE 10 */
+  display: -webkit-flex; /* NEW - Chrome */
+  display: flex; /* NEW, Spec - Opera 12.1, Firefox 20+ */
+  flex-direction: horizontal;
+  justify-content: center;
 }
 
 button {
-    background-color: rgb(152, 0, 182);
-    color: white;
-    border: 1px solid #444;
-    width: 140px;
-    padding: 15px 32px;
-    margin-left: 5px;
-    margin-right: 5px;
-    margin-top: 10px;
-    font-size: 16px;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 4px;
+  background-color: rgb(152, 0, 182);
+  color: white;
+  border: 1px solid #444;
+  width: 140px;
+  padding: 15px 32px;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 10px;
+  font-size: 16px;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 4px;
 }
 
 button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 button:focus {
-    outline: 0;
+  outline: 0;
 }
 
 #Generate {
-    background-color: #019131;
+  background-color: #019131;
 }
 
 #Generate:active {
-    background-color: grey;
+  background-color: grey;
 }
 
-[name= Beginner] {
-    background-color: #0071b3;
+[name="Beginner"] {
+  background-color: #0071b3;
 }
 
-[name= Casual] {
-    background-color: #01a5b1;
+[name="Casual"] {
+  background-color: #01a5b1;
 }
 
-[name= Tricky] {
-    background-color: #E5BC3B;
+[name="Tricky"] {
+  background-color: #e5bc3b;
 }
 
-[name= Difficult] {
-    background-color: #c96b00;
+[name="Difficult"] {
+  background-color: #c96b00;
 }
 
-[name= Challenge] {
-    background-color: #cc0000;
+[name="Challenge"] {
+  background-color: #cc0000;
 }
 
 /* For Mobile */
 @media screen and (max-width: 610px) {
-    #table {
-        width: 80vw;
-        height: 80vw;
-        font-size: 3.7vw;
-    }
+  #table {
+    width: 80vw;
+    height: 80vw;
+    font-size: 3.7vw;
+  }
 
-    .td:first-child {
-        border-left: solid 3px;
-    }
+  .td:first-child {
+    border-left: solid 3px;
+  }
 
-    .td:nth-child(3n) {
-        border-right: solid 3px;
-    }
+  .td:nth-child(3n) {
+    border-right: solid 3px;
+  }
 
-    .tr:first-child {
-        border-top: solid 3px;
-    }
+  .tr:first-child {
+    border-top: solid 3px;
+  }
 
-    .tr:nth-child(3n) .td { 
-        border-bottom: solid 3px; 
-    }
+  .tr:nth-child(3n) .td {
+    border-bottom: solid 3px;
+  }
 
-    .label {
-        font-size: 16px;
-    }
+  .label {
+    font-size: 16px;
+  }
 
-    footer {
-        font-size: 10px;
-    }
+  footer {
+    font-size: 10px;
+  }
 }
 
 /* For Desktop */
 @media screen and (min-width: 610px) {
-    #table {
-        width: 600px;
-        height: 600px;
-        font-size: 30px;
-    }
+  #table {
+    width: 600px;
+    height: 600px;
+    font-size: 30px;
+  }
 
-    .td:first-child {
-        border-left: solid 4px;
-    }
+  .td:first-child {
+    border-left: solid 4px;
+  }
 
-    .td:nth-child(3n) {
-        border-right: solid 4px;
-    }
+  .td:nth-child(3n) {
+    border-right: solid 4px;
+  }
 
-    .tr:first-child {
-        border-top: solid 4px;
-    }
+  .tr:first-child {
+    border-top: solid 4px;
+  }
 
-    .tr:nth-child(3n) .td { 
-        border-bottom: solid 4px; 
-    }
+  .tr:nth-child(3n) .td {
+    border-bottom: solid 4px;
+  }
 
-    .label {
-        font-size: 20px;
-    }
+  .label {
+    font-size: 20px;
+  }
 
-    footer {
-        font-size: 14px;
-    }
+  footer {
+    font-size: 14px;
+  }
 }
 
-#table { 
-    display: table;
-    margin: 2em auto;
-    margin-bottom: 25px;
-    border-collapse: collapse; 
-    font-family: Calibri, sans-serif;
+#table {
+  display: table;
+  margin: 2em auto;
+  margin-bottom: 25px;
+  border-collapse: collapse;
+  font-family: Calibri, sans-serif;
 }
 
 .tr {
-    display: table-row;
+  display: table-row;
 }
 
 .td {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 100%;
-    padding-top: 100%; /* 1:1 Aspect Ratio */
-    display: table-cell;
-    border: solid 1px;
-    padding: 2px;
-    height: 2em;
-    width: 2em;
-    text-align: center;
-    vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  padding-top: 100%; /* 1:1 Aspect Ratio */
+  display: table-cell;
+  border: solid 1px;
+  padding: 2px;
+  height: 2em;
+  width: 2em;
+  text-align: center;
+  vertical-align: middle;
 }
 
-.Circle{
-    background-color: white;
-    display: block;
-    height: 100%;
-    width: 100%;
-    border-radius: 50%;
-    border: none;
-    color: #000;
-    line-height: 50px;
-    text-align: center
+.Circle {
+  background-color: white;
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 50%;
+  border: none;
+  color: #000;
+  line-height: 50px;
+  text-align: center;
 }
 
 .label {
-    text-align: center;
-    white-space: pre;
+  text-align: center;
+  white-space: pre;
 }
 
 footer {
-    color: grey;
-    font-family: Courier, Monaco, monospace;
-    margin-top: 25px;
+  color: grey;
+  font-family: Courier, Monaco, monospace;
+  margin-top: 25px;
 }
 
 a {
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    color: inherit;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  color: inherit;
 }
 
 a:hover {
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    opacity: 0.7;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  opacity: 0.7;
 }
 
-[color= White] {
-    background-color: white;
+[color="White"] {
+  background-color: white;
 }
 
-[color= Red] {
-    background-color: #db0000;
+[color="Red"] {
+  background-color: #db0000;
 }
 
-[color= Orange] {
-    background-color: rgb(209, 138, 7);
+[color="Orange"] {
+  background-color: rgb(209, 138, 7);
 }
 
-[color= Yellow] {
-    background-color: rgb(228, 206, 8);
+[color="Yellow"] {
+  background-color: rgb(228, 206, 8);
 }
 
-[color= Lime] {
-    background-color: rgb(129, 211, 74);
+[color="Lime"] {
+  background-color: rgb(129, 211, 74);
 }
 
-[color= Green] {
-    background-color: rgb(0, 126, 38);
+[color="Green"] {
+  background-color: rgb(0, 126, 38);
 }
 
-[color= Blue] {
-    background-color: rgb(147, 201, 233);
+[color="Blue"] {
+  background-color: rgb(147, 201, 233);
 }
 
-[color= Indigo] {
-    background-color: rgb(0, 39, 214);
+[color="Indigo"] {
+  background-color: rgb(0, 39, 214);
 }
 
-[color= Purple] {
-    background-color: rgb(188, 143, 209);
+[color="Purple"] {
+  background-color: rgb(188, 143, 209);
 }
-[color= Violet] {
-    background-color: #6a17a1;
+[color="Violet"] {
+  background-color: #6a17a1;
 }

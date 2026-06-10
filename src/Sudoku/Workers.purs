@@ -34,17 +34,17 @@ type PendingRequest =
 
 type WorkerState =
   { worker :: Worker
-  , id     :: Int
-  , jobId  :: Ref (Maybe Int)
+  , id :: Int
+  , jobId :: Ref (Maybe Int)
   }
 
 type WorkerPool =
-  { idleWorkers      :: Ref (Array WorkerState)
-  , allWorkers       :: Ref (Array WorkerState)
-  , requestId        :: Ref Int
-  , workerId         :: Ref Int
-  , pendingRequests  :: Ref (Map Int PendingRequest)
-  , cap              :: Int
+  { idleWorkers :: Ref (Array WorkerState)
+  , allWorkers :: Ref (Array WorkerState)
+  , requestId :: Ref Int
+  , workerId :: Ref Int
+  , pendingRequests :: Ref (Map Int PendingRequest)
+  , cap :: Int
   }
 
 foreign import workerCountImpl :: Effect Int
@@ -71,7 +71,7 @@ initPool = do
   pendingRequests <- Ref.new Map.empty
   let pool = { idleWorkers, allWorkers, requestId, workerId, pendingRequests, cap }
   -- Pre-warm all workers
-  for_ (1..pool.cap) \_ -> do
+  for_ (1 .. pool.cap) \_ -> do
     void $ spawnAndAdd pool
   log $ "Warmed " <> show pool.cap <> " workers"
   pure pool
@@ -85,8 +85,8 @@ spawnAndAdd pool = do
       wid <- Ref.modify (_ + 1) pool.workerId
       jobId <- Ref.new Nothing
       let ws = { worker: w, id: wid, jobId }
-      Ref.modify_ (_ <> [ws]) pool.allWorkers
-      Ref.modify_ (_ <> [ws]) pool.idleWorkers
+      Ref.modify_ (_ <> [ ws ]) pool.allWorkers
+      Ref.modify_ (_ <> [ ws ]) pool.idleWorkers
       onMessageImpl w (handleMessage pool ws)
       onErrorImpl w (handleWorkerHardwareError pool ws)
       pure (Just ws)
@@ -99,7 +99,7 @@ handleMessage pool ws msg = do
   -- Return to idle pool if still in allWorkers
   all <- Ref.read pool.allWorkers
   when (ws `elem'` all) do
-    Ref.modify_ (_ <> [ws]) pool.idleWorkers
+    Ref.modify_ (_ <> [ ws ]) pool.idleWorkers
 
   -- Lookup and resolve
   pending <- Ref.read pool.pendingRequests
@@ -159,18 +159,20 @@ raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
 
   -- Acquire workers
   available <- Ref.read pool.idleWorkers
-  let toTake = min n (length available)
-      dispatching = take toTake available
+  let
+    toTake = min n (length available)
+    dispatching = take toTake available
 
   Ref.modify_ (filter (\ws -> not (ws `elem'` dispatching))) pool.idleWorkers
 
   -- If we need more, try to spawn up to cap
   allCount <- length <$> Ref.read pool.allWorkers
-  let needed = n - (length dispatching)
-      canSpawn = min needed (pool.cap - allCount)
+  let
+    needed = n - (length dispatching)
+    canSpawn = min needed (pool.cap - allCount)
 
-  newlySpawned <- if canSpawn > 0
-    then catMaybes <$> traverse (\_ -> spawnAndAdd pool) (1..canSpawn)
+  newlySpawned <-
+    if canSpawn > 0 then catMaybes <$> traverse (\_ -> spawnAndAdd pool) (1 .. canSpawn)
     else pure []
 
   -- Mark newly spawned as not idle (they are added to idle in spawnAndAdd, so remove them)

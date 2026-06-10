@@ -16,13 +16,13 @@ generateStringly variantStr difficultyStr =
     Nothing, _ -> pure { result: "", error: "Invalid variant: " <> variantStr }
     _, Nothing -> pure { result: "", error: "Invalid difficulty: " <> difficultyStr }
   where
-    parseVariant "UniqueDiagonal" = Just UniqueDiagonal
-    parseVariant "Standard"       = Just Standard
-    parseVariant _                = Nothing
+  parseVariant "UniqueDiagonal" = Just UniqueDiagonal
+  parseVariant "Standard" = Just Standard
+  parseVariant _ = Nothing
 
-    parseDifficulty "Casual"      = Just Casual
-    parseDifficulty "Tricky"      = Just Tricky
-    parseDifficulty "Difficult"   = Just Difficult
-    parseDifficulty "Challenge"   = Just Challenge
-    parseDifficulty "Beginner"    = Just Beginner
-    parseDifficulty _             = Nothing
+  parseDifficulty "Casual" = Just Casual
+  parseDifficulty "Tricky" = Just Tricky
+  parseDifficulty "Difficult" = Just Difficult
+  parseDifficulty "Challenge" = Just Challenge
+  parseDifficulty "Beginner" = Just Beginner
+  parseDifficulty _ = Nothing

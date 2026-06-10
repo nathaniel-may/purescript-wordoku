@@ -1,11 +1,11 @@
 -- | module for solving sudoku puzzles
 -- | re-exports necessary basics from Internal
 module Sudoku.Solver
-    ( module Exports
-    , solve
-    , solveAll
-    , solveUnique)
-where
+  ( module Exports
+  , solve
+  , solveAll
+  , solveUnique
+  ) where
 
 import Prelude
 
@@ -15,7 +15,6 @@ import Sudoku.Internal (SearchResult(..), Variant(..), colors, numbers) as Expor
 import Sudoku.Internal (CellSet, Variant, SearchResult, gridString, readGrid)
 import Sudoku.Internal.Solver as Internal
 
-
 -- | Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
 -- |
 -- | usage:
@@ -24,10 +23,9 @@ import Sudoku.Internal.Solver as Internal
 -- | > (Right (Just "415873962836129475972564183184935726763482519529716834657348291348291657291657348"))
 solve :: CellSet -> Variant -> String -> Either String (Maybe String)
 solve cs v input = do
-    puzzle <- readGrid cs input
-    let solution = Internal.solve v puzzle
-    pure $ map gridString solution
-
+  puzzle <- readGrid cs input
+  let solution = Internal.solve v puzzle
+  pure $ map gridString solution
 
 -- | Takes in a puzzle and finds all solutions.
 -- |
@@ -37,9 +35,9 @@ solve cs v input = do
 -- | > (Right ["415873962836129475972564183184935726763482519529716834657348291348291657291657348"])
 solveAll :: CellSet -> Variant -> String -> Either String (Array String)
 solveAll cs v input = do
-    puzzle <- readGrid cs input
-    let solution = Internal.solveAll v puzzle
-    pure $ map gridString solution
+  puzzle <- readGrid cs input
+  let solution = Internal.solveAll v puzzle
+  pure $ map gridString solution
 
 -- | Takes in a puzzle, determines if it has a solution, and if that solution is unique:
 -- | - Nothing = puzzle has no solution
@@ -55,6 +53,6 @@ solveAll cs v input = do
 -- | (Right (Unique "415873962836129475972564183184935726763482519529716834657348291348291657291657348"))
 solveUnique :: CellSet -> Variant -> String -> Either String (SearchResult String)
 solveUnique cs v input = do
-    puzzle <- readGrid cs input
-    let result = Internal.solveUnique v puzzle
-    pure $ map gridString result
+  puzzle <- readGrid cs input
+  let result = Internal.solveUnique v puzzle
+  pure $ map gridString result
