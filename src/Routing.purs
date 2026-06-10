@@ -40,29 +40,31 @@ parseDifficulty s = case toLower s of
 
 parsePath :: String -> Route
 parsePath path =
-  let segments = filter (_ /= "") (split (Pattern "/") path)
-  in case segments of
-    [] -> Home
-    [gStr] ->
-      case parseGame gStr of
-        Just g -> GameRoute g
-        Nothing -> Home
-    [gStr, dStr] ->
-      case parseGame gStr of
-        Just g ->
-          case parseDifficulty dStr of
-            Just d -> DifficultyRoute g d
-            Nothing -> GameRoute g
-        Nothing -> Home
-    [gStr, dStr, pStr] ->
-      case parseGame gStr, parseDifficulty dStr of
-        Just g, Just d ->
-          case decodePuzzle g pStr of
-            Just { puzzle, key } -> PuzzleRoute g d puzzle key
-            _ -> DifficultyRoute g d
-        Just g, Nothing -> GameRoute g
-        _, _ -> Home
-    _ -> Home
+  let
+    segments = filter (_ /= "") (split (Pattern "/") path)
+  in
+    case segments of
+      [] -> Home
+      [ gStr ] ->
+        case parseGame gStr of
+          Just g -> GameRoute g
+          Nothing -> Home
+      [ gStr, dStr ] ->
+        case parseGame gStr of
+          Just g ->
+            case parseDifficulty dStr of
+              Just d -> DifficultyRoute g d
+              Nothing -> GameRoute g
+          Nothing -> Home
+      [ gStr, dStr, pStr ] ->
+        case parseGame gStr, parseDifficulty dStr of
+          Just g, Just d ->
+            case decodePuzzle g pStr of
+              Just { puzzle, key } -> PuzzleRoute g d puzzle key
+              _ -> DifficultyRoute g d
+          Just g, Nothing -> GameRoute g
+          _, _ -> Home
+      _ -> Home
 
 buildPath :: Game -> Difficulty -> String -> DecodedKey -> String
 buildPath g d p k = "/" <> toLower (show g) <> "/" <> toLower (show d) <> "/" <> encodePuzzle p k
