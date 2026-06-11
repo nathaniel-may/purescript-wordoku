@@ -64,7 +64,7 @@ jobs:
           path: ~/.cache/spago
           key: spago-${{ hashFiles('spago.lock') }}
       - run: npm run ps-install
-      - run: spago build --strict
+      - run: npx spago build --strict
 
   unit:
     needs: [build, warnings]
