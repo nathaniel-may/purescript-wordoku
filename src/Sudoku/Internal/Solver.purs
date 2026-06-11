@@ -6,7 +6,7 @@ module Sudoku.Internal.Solver where
 import Prelude
 
 import Control.Bind (bindFlipped)
-import Data.Array (all, any, concat, delete, elem, filter, length, uncons, zip, (..))
+import Data.Array (all, any, concat, elem, filter, length, uncons, zip, (..))
 import Data.Array as Array
 import Data.Foldable (foldl, minimumBy)
 import Data.List as List
@@ -14,7 +14,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Sudoku.Internal (Cell(..), Row, SearchResult(..), Tuple3(..), Value, Variant(..), isUnique, on)
+import Sudoku.Internal (Cell(..), SearchResult(..), Tuple3(..), Value, Variant(..), isUnique, on)
 import Sudoku.Internal.Grid (Grid, diagonalOf, extract, replace2D, replaceDiagonal, subGridsToRows, traverseRows, transpose)
 
 data Search
@@ -36,7 +36,7 @@ pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = fixM pruneCellsByExclusives =<< fixM pruneCellsByFixed cells
 
 -- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
-exclusivePossibilities :: Row -> Array (Array Value)
+exclusivePossibilities :: Array Cell -> Array (Array Value)
 exclusivePossibilities = Array.fromFoldable <<< Map.values
   <<< Map.filterWithKey (\is xs -> length is == length xs)
   <<< foldl (\acc (Tuple k v) -> Map.insertWith (<>) v [ k ] acc) Map.empty
@@ -138,7 +138,7 @@ nextGrids grid = do
 isGridFilled :: Grid -> Boolean
 isGridFilled grid = all isFixed (concat $ extract grid)
 
-isInvalidRow :: Row -> Boolean
+isInvalidRow :: Array Cell -> Boolean
 isInvalidRow row =
   let
     fixeds :: Array Value
@@ -206,22 +206,22 @@ To determine uniqueness, it must attempt to visit every solution in the space an
 or exit early when it finds a second solution. For a fast single solution use `solve`.
 -}
 solveUnique :: Variant -> Grid -> SearchResult Grid
-solveUnique v grid = searchResult $ solveUnique' v grid
+solveUnique v grid = searchResult $ solveUnique' grid
   where
 
-  solveUnique' :: Variant -> Grid -> Search
-  solveUnique' v g = fromMaybe NoSolution'
-    $ solve2 v <$> (pruneGrid v g)
+  solveUnique' :: Grid -> Search
+  solveUnique' g = fromMaybe NoSolution'
+    $ solve2 <$> (pruneGrid v g)
 
-  solve2 :: Variant -> Grid -> Search
-  solve2 v g
+  solve2 :: Grid -> Search
+  solve2 g
     | isGridInvalid v g = NoSolution'
     | isGridFilled g = AtLeast' g
     | otherwise = case nextGrids g of
         Nothing -> NoSolution'
-        (Just (Tuple grid1 grid2)) -> case solveUnique' v grid1 of
+        (Just (Tuple grid1 grid2)) -> case solveUnique' grid1 of
           x@(NotUnique' _ _) -> x
-          x -> x `mergeSearch` (solveUnique' v grid2)
+          x -> x `mergeSearch` (solveUnique' grid2)
 
   searchResult :: Search -> SearchResult Grid
   searchResult NoSolution' = NoSolution

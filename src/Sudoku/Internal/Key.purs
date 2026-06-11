@@ -16,7 +16,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Partial.Unsafe (unsafeCrashWith)
 import Data.String.CodeUnits (toCharArray)
-import Sudoku.Internal (Value(..), allValues)
+import Sudoku.Internal (Value, allValues)
 
 newtype Key = Key { toChar :: Map Value Char, fromChar :: Map Char Value }
 

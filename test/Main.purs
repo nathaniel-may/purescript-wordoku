@@ -2,7 +2,7 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (all, elem, filter, find, foldl, groupAll, length, null, (..))
+import Data.Array (all, elem, filter, find, groupAll, length, null, (..))
 import Data.Array.NonEmpty as NonEmptyArray
 import Data.Either (Either(..), hush, isLeft)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -11,7 +11,7 @@ import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Sudoku (Difficulty(..), Game(..), Variant(..), generate)
-import Sudoku.Encoding (DecodedKey(..), keyToString)
+import Sudoku.Encoding (keyToString)
 import Sudoku.Internal (SearchResult(..), diagonalString)
 import Sudoku.Internal.Grid (Grid, gridString, readGrid)
 import Sudoku.Internal.Generator (diffNum)

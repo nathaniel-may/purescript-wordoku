@@ -45,8 +45,29 @@ jobs:
         if: steps.npm-cache.outputs.cache-hit != 'true'
       - run: npm run format:check
 
+  warnings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/cache@v4
+        id: npm-cache
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/spago
+          key: spago-${{ hashFiles('spago.lock') }}
+      - run: npm run ps-install
+      - run: npx spago build --strict
+
   unit:
-    needs: build
+    needs: [build, warnings]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
