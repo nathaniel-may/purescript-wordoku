@@ -35,7 +35,6 @@ instance cellShow :: Show Cell where
   show (Possible set) = "."
 
 type Row = Array Cell
-type Grid = Array Row
 
 data Variant = Standard | UniqueDiagonal
 
@@ -54,11 +53,6 @@ instance functorSearchResult :: Functor SearchResult where
   map f (Unique x) = Unique (f x)
   map f (NotUnique x y) = NotUnique (f x) (f y)
 
-data Search
-  = NoSolution'
-  | NotUnique' Grid Grid
-  | AtLeast' Grid
-
 -- does not use smart constructor
 numbers :: CellSet
 numbers = (CellSet '.' [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ])
@@ -66,12 +60,6 @@ numbers = (CellSet '.' [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ])
 -- does not use smart constructor
 colors :: CellSet
 colors = (CellSet '.' [ 'R', 'O', 'Y', 'L', 'G', 'B', 'I', 'P', 'V' ])
-
-showGrid :: ∀ a. Show a => Array (Array a) -> String
-showGrid = joinWith "\n" <<< map (joinWith " " <<< map show)
-
-gridString :: Grid -> String
-gridString = joinWith "" <<< map (joinWith "" <<< map show)
 
 mkCellSet :: Char -> Array Char -> Either String CellSet
 mkCellSet empty allValues
@@ -92,34 +80,10 @@ readCell (CellSet empty allValues) v =
   else if v `elem` allValues then Right (Fixed v)
   else Left $ "char " <> show v <> "is not one of " <> show allValues
 
-readGrid :: CellSet -> String -> Either String Grid
-readGrid cellSet s =
-  if CodePoints.length s /= 81 then Left "input must be exactly 81 characters long"
-  else traverse (traverse $ readCell cellSet) (chunksOf 9 $ toCharArray s)
-
-readNumberGrid :: String -> Either String Grid
-readNumberGrid s = (\cellSet -> readGrid cellSet s) =<< mkCellSet '.' [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ]
-
-showGridWithPossibilities :: CellSet -> Grid -> String
-showGridWithPossibilities (CellSet _ allValues) = (joinWith "\n") <<< map ((joinWith " ") <<< map showCell)
-  where
-  showCell (Fixed x) = show x <> "          "
-  showCell (Possible xs) =
-    (\x -> x <> "]")
-      <<< foldl (\acc x -> acc <> if x `elem` xs then show x else " ") "["
-      $ allValues
 
 ----------------------------------------------
 -- functions useful for solving and generation
 ----------------------------------------------
-
--- replace an element by its index [0,80] in a 9x9 grid
-replace2D :: ∀ a. Int -> a -> Array (Array a) -> Array (Array a)
-replace2D i v =
-  let
-    (Tuple x y) = (Tuple (i `quot` 9) (i `mod` 9))
-  in
-    replaceAt x (replaceAt y (const v))
 
 -- retrieve an element by its index [0,80] in a 9x9 grid
 index2D :: ∀ a. Array (Array a) -> Int -> Maybe a

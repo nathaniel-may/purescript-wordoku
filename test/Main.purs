@@ -12,9 +12,10 @@ import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Sudoku (Difficulty(..), Game(..), Variant(..), generate)
 import Sudoku.Encoding (keyToString)
-import Sudoku.Internal.Solver (diagonalOf)
+import Sudoku.Internal.Grid (diagonalOf)
 import Sudoku.Internal.Solver as Internal
-import Sudoku.Internal (Grid, SearchResult(..), cellSetFromPuzzle, gridString, mkCellSet, readGrid, readNumberGrid)
+import Sudoku.Internal (SearchResult(..), cellSetFromPuzzle, mkCellSet)
+import Sudoku.Internal.Grid (Grid, gridString, readGrid, readNumberGrid)
 import Sudoku.Internal.Generator (diffNum)
 import Sudoku.Wordlist (wordlist)
 import Test.EncodingTests (encodingTests)
@@ -36,8 +37,7 @@ allProps = sequence
       results <- traverse
         ( \_ -> do
             { puzzle: str } <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
-            let solved = solveWordoku UniqueDiagonal str
-            let diag = (foldl (<>) "") <<< (map show) <<< diagonalOf $ solved
+            let diag = fromMaybe "" $ (foldl (<>) "" <<< map show <<< diagonalOf) <$> solveWordoku UniqueDiagonal str
             pure $ if diag `elem` wordlist then Right unit
                    else Left ("puzzle=" <> str <> " diagonal=" <> diag)
         )
@@ -52,7 +52,7 @@ allProps = sequence
       results <- traverse
         ( \_ -> do
             { puzzle: str } <- generate { difficulty: Beginner, variant: Standard, values: Sudoku }
-            let solvedStr = gridString $ solveStr Standard str
+            let solvedStr = fromMaybe "" $ gridString <$> solveStr Standard str
             let total81 = 81 == (String.length solvedStr)
             let all9 = all (\x -> x == 9) $ map NonEmptyArray.length (groupAll $ toCharArray solvedStr)
             pure $ total81 && all9
@@ -119,11 +119,10 @@ hushLeft :: ∀ a b. Either a b -> Maybe a
 hushLeft (Left x) = Just x
 hushLeft _ = Nothing
 
-solveStr :: Variant -> String -> Grid
-solveStr v str = fromMaybe [] $ (Internal.solve v) =<< (hush $ readNumberGrid str)
+solveStr :: Variant -> String -> Maybe Grid
+solveStr v str = (Internal.solve v) =<< (hush $ readNumberGrid str)
 
--- Wordoku solver helper that infers cellset (may still have issues if letters are missing)
-solveWordoku :: Variant -> String -> Grid
-solveWordoku v str = fromMaybe [] $ (Internal.solve v)
+solveWordoku :: Variant -> String -> Maybe Grid
+solveWordoku v str = (Internal.solve v)
   =<< (hush <<< flip readGrid str)
   =<< (hush $ cellSetFromPuzzle str)

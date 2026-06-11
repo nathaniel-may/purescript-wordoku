@@ -11,7 +11,8 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Sudoku.Internal (Cell(..), CellSet(..), Grid, SearchResult(..), Variant(..), diagonalOf, emptySudoku, gridString, numbers, randomArray, readGrid, readNumberGrid, replace2D)
+import Sudoku.Internal (Cell(..), CellSet(..), SearchResult(..), Variant(..), diagonalOf, emptySudoku, numbers, randomArray)
+import Sudoku.Internal.Grid (Grid, gridString, readGrid, readNumberGrid, replace2D)
 import Sudoku.Internal.Solver (solve, solveUnique)
 import Sudoku.Wordlist (wordlist)
 
@@ -77,7 +78,7 @@ generate opts = case opts.values of
   wordMap :: String -> String -> Map Char Char
   wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
     where
-    solved = fromMaybe sudoku $ map gridString $ solve UniqueDiagonal <<< fromMaybe [] <<< hush <<< readNumberGrid $ sudoku
+    solved = fromMaybe sudoku $ gridString <$> (solve UniqueDiagonal =<< hush (readNumberGrid sudoku))
 
   -- keys become values
   mapValues :: Map Char Char -> String -> String

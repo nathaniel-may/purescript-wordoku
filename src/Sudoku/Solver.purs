@@ -12,7 +12,8 @@ import Prelude
 import Data.Either (Either)
 import Data.Maybe (Maybe)
 import Sudoku.Internal (SearchResult(..), Variant(..), colors, numbers) as Exports
-import Sudoku.Internal (CellSet, Variant, SearchResult, gridString, readGrid)
+import Sudoku.Internal (CellSet, Variant, SearchResult)
+import Sudoku.Internal.Grid (gridString, readGrid)
 import Sudoku.Internal.Solver as Internal
 
 -- | Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.

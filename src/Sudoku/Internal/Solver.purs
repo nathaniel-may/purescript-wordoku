@@ -14,7 +14,13 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Sudoku.Internal (Cell(..), CellSet(..), Grid, Row, Search(..), SearchResult(..), Tuple3(..), Variant(..), chunksOf, index2D, isUnique, on, replace2D, transpose, zip3)
+import Sudoku.Internal (Cell(..), CellSet(..), Row, SearchResult(..), Tuple3(..), Variant(..), isUnique, on)
+import Sudoku.Internal.Grid (Grid, diagonalOf, extract, replace2D, replaceDiagonal, subGridsToRows, traverseRows, transpose)
+
+data Search
+  = NoSolution'
+  | NotUnique' Grid Grid
+  | AtLeast' Grid
 
 isPossible :: Cell -> Boolean
 isPossible (Possible _) = true
@@ -31,22 +37,6 @@ allBut (CellSet _ allValues) v = Possible $ delete v allValues
 
 pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = fixM pruneCellsByExclusives =<< fixM pruneCellsByFixed cells
-
-subGridsToRows :: Grid -> Grid
-subGridsToRows =
-  (=<<)
-    ( \rows ->
-        let
-          Tuple3 r0 r1 r2 = three $ map (chunksOf 3) rows
-        in
-          zip3 (\a b c -> a <> b <> c) r0 r1 r2
-    ) <<< chunksOf 3
-  where
-  three [ x, y, z ] = Tuple3 x y z
-  three _ = Tuple3 [] [] []
-
-diagIdxs :: Array Int
-diagIdxs = map ((*) 10) (0 .. 8)
 
 -- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
 exclusivePossibilities :: Row -> Array (Array Char)
@@ -108,20 +98,14 @@ pruneGrid' :: Variant -> Grid -> Maybe Grid
 pruneGrid' UniqueDiagonal grid = pruneDiag =<< pruneGrid' Standard grid
 pruneGrid' Standard grid =
   -- prune cells as rows
-  traverse pruneCells grid
+  traverseRows pruneCells grid
     -- make columns into rows, prune and replace
-    >>= map transpose <<< traverse pruneCells <<< transpose
+    >>= map transpose <<< traverseRows pruneCells <<< transpose
     -- make subgrids rows, prune and replace
-    >>= map subGridsToRows <<< traverse pruneCells <<< subGridsToRows
+    >>= map subGridsToRows <<< traverseRows pruneCells <<< subGridsToRows
 
 pruneDiag :: Grid -> Maybe Grid
 pruneDiag grid' = flip replaceDiagonal grid' <$> (pruneCells $ diagonalOf grid')
-
-diagonalOf :: Grid -> Row
-diagonalOf grid = fromMaybe [] $ traverse (index2D grid) diagIdxs
-
-replaceDiagonal :: Row -> Grid -> Grid
-replaceDiagonal row grid = foldl (\grid' (Tuple cell i) -> replace2D i cell grid') grid (row `zip` diagIdxs)
 
 pruneGrid :: Variant -> Grid -> Maybe Grid
 pruneGrid = fixM <<< pruneGrid'
@@ -147,7 +131,7 @@ nextGrids grid = do
     filter (isPossible <<< snd)
       <<< zip (0 .. 81)
       <<< concat
-      $ grid
+      $ extract grid
 
   fixCell :: Tuple Int Cell -> Maybe (Tuple3 Int Cell Cell)
   fixCell (Tuple i (Possible [ x, y ])) = Just $ Tuple3 i (Fixed x) (Fixed y)
@@ -155,7 +139,7 @@ nextGrids grid = do
   fixCell _ = Nothing
 
 isGridFilled :: Grid -> Boolean
-isGridFilled grid = all isFixed (concat grid)
+isGridFilled grid = all isFixed (concat $ extract grid)
 
 isInvalidRow :: Row -> Boolean
 isInvalidRow row =
@@ -178,9 +162,9 @@ isGridInvalid UniqueDiagonal grid =
   isInvalidRow (diagonalOf grid)
     || isGridInvalid Standard grid
 isGridInvalid Standard grid =
-  any isInvalidRow grid
-    || any isInvalidRow (transpose grid)
-    || any isInvalidRow (subGridsToRows grid)
+  any isInvalidRow (extract grid)
+    || any isInvalidRow (extract $ transpose grid)
+    || any isInvalidRow (extract $ subGridsToRows grid)
 
 {-
 Takes in a puzzle, finds the first of possibly many solutions with a depth-first search of the solution space.
