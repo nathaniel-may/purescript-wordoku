@@ -13,9 +13,14 @@ import Sudoku.Generator
 import Sudoku.Solver
   ( SearchResult(..)
   , Variant(..)
-  , colors
-  , numbers
   , solve
   , solveAll
   , solveUnique
+  ) as Exports
+
+import Sudoku.Internal.Key
+  ( Key
+  , mkKey
+  , sudokuKey
+  , colorkuKey
   ) as Exports
