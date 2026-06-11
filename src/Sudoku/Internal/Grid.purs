@@ -3,6 +3,7 @@ module Sudoku.Internal.Grid
   , readGrid
   , readNumberGrid
   , gridString
+  , emptyGridWith
   , extract
   , replace2D
   , traverseRows
@@ -14,32 +15,48 @@ module Sudoku.Internal.Grid
 
 import Prelude
 
-import Data.Array (concat, filter, zip, (..))
+import Data.Array (concat, filter, replicate, zip, (..))
 import Data.Either (Either(..))
 import Data.Foldable (foldl)
 import Data.Int (quot)
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
-import Data.String.CodeUnits (toCharArray)
+import Data.String.CodeUnits (singleton, toCharArray)
+import Partial.Unsafe (unsafeCrashWith)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Sudoku.Internal (Cell, CellSet, Row, chunksOf, index2D, mkCellSet, readCell, replaceAt, transpose) as Internal
+import Sudoku.Internal (Cell(..), Row, Value, allValues, chunksOf, index2D, replaceAt, transpose) as Internal
+import Sudoku.Internal.Key (Key, fromChar, sudokuKey, toChar) as Key
 
 newtype Grid = Grid (Array Internal.Row)
 
 derive instance eqGrid :: Eq Grid
 
-readGrid :: Internal.CellSet -> String -> Either String Grid
-readGrid cellSet s =
+readGrid :: Key.Key -> String -> Either String Grid
+readGrid key s =
   if CodePoints.length s /= 81 then Left "input must be exactly 81 characters long"
-  else map Grid $ traverse (traverse $ Internal.readCell cellSet) (Internal.chunksOf 9 $ toCharArray s)
+  else map Grid $ traverse (traverse $ readCell key) (Internal.chunksOf 9 $ toCharArray s)
+  where
+  readCell :: Key.Key -> Char -> Either String Internal.Cell
+  readCell k c
+    | c == '.' = Right $ Internal.Possible Internal.allValues
+    | otherwise = case Key.fromChar k c of
+        Just v -> Right $ Internal.Fixed v
+        Nothing -> Left $ "character " <> show c <> " is not in the key"
 
 readNumberGrid :: String -> Either String Grid
-readNumberGrid s = (\cs -> readGrid cs s) =<< Internal.mkCellSet '.' [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ]
+readNumberGrid = readGrid Key.sudokuKey
 
-gridString :: Grid -> String
-gridString (Grid rows) = joinWith "" $ map (joinWith "" <<< map show) rows
+gridString :: Key.Key -> Grid -> String
+gridString key (Grid rows) = joinWith "" $ map (joinWith "" <<< map (cellToChar key)) rows
+  where
+  cellToChar :: Key.Key -> Internal.Cell -> String
+  cellToChar k (Internal.Fixed v) = singleton $ Key.toChar k v
+  cellToChar _ (Internal.Possible _) = "."
+
+emptyGridWith :: Array Internal.Value -> Grid
+emptyGridWith values = Grid $ replicate 9 (replicate 9 (Internal.Possible values))
 
 extract :: Grid -> Array Internal.Row
 extract (Grid rows) = rows

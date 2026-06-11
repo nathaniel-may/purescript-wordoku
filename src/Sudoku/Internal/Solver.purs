@@ -14,7 +14,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
-import Sudoku.Internal (Cell(..), CellSet(..), Row, SearchResult(..), Tuple3(..), Variant(..), isUnique, on)
+import Sudoku.Internal (Cell(..), Row, SearchResult(..), Tuple3(..), Value, Variant(..), isUnique, on)
 import Sudoku.Internal.Grid (Grid, diagonalOf, extract, replace2D, replaceDiagonal, subGridsToRows, traverseRows, transpose)
 
 data Search
@@ -30,16 +30,13 @@ isFixed :: Cell -> Boolean
 isFixed (Fixed _) = true
 isFixed _ = false
 
-allBut :: CellSet -> Char -> Cell
-allBut (CellSet _ allValues) v = Possible $ delete v allValues
-
 ----- solver fns -----
 
 pruneCells :: Array Cell -> Maybe (Array Cell)
 pruneCells cells = fixM pruneCellsByExclusives =<< fixM pruneCellsByFixed cells
 
 -- from translated from https://abhinavsarkar.net/posts/fast-sudoku-solver-in-haskell-2/
-exclusivePossibilities :: Row -> Array (Array Char)
+exclusivePossibilities :: Row -> Array (Array Value)
 exclusivePossibilities = Array.fromFoldable <<< Map.values
   <<< Map.filterWithKey (\is xs -> length is == length xs)
   <<< foldl (\acc (Tuple k v) -> Map.insertWith (<>) v [ k ] acc) Map.empty
@@ -55,7 +52,7 @@ exclusivePossibilities = Array.fromFoldable <<< Map.values
     )
   <<< zip (1 .. 9)
 
-makeCell :: Array Char -> Maybe Cell
+makeCell :: Array Value -> Maybe Cell
 makeCell [] = Nothing
 makeCell [ y ] = Just $ Fixed y
 makeCell ys = Just $ Possible ys
@@ -63,7 +60,7 @@ makeCell ys = Just $ Possible ys
 pruneCellsByFixed :: Array Cell -> Maybe (Array Cell)
 pruneCellsByFixed cells = traverse pruneCell cells
   where
-  fixeds :: Array Char
+  fixeds :: Array Value
   fixeds = cells >>=
     ( \cell -> case cell of
         Fixed x -> [ x ]
@@ -79,10 +76,10 @@ pruneCellsByExclusives cells = case exclusives of
   [] -> Just cells
   _ -> traverse pruneCell cells
   where
-  exclusives :: Array (Array Char)
+  exclusives :: Array (Array Value)
   exclusives = exclusivePossibilities cells
 
-  allExclusives :: Array Char
+  allExclusives :: Array Value
   allExclusives = concat exclusives
 
   pruneCell :: Cell -> Maybe Cell
@@ -91,7 +88,7 @@ pruneCellsByExclusives cells = case exclusives of
     if intersection `elem` exclusives then makeCell intersection
     else Just cell
     where
-    intersection :: Array Char
+    intersection :: Array Value
     intersection = xs `Array.intersect` allExclusives
 
 pruneGrid' :: Variant -> Grid -> Maybe Grid
@@ -144,6 +141,7 @@ isGridFilled grid = all isFixed (concat $ extract grid)
 isInvalidRow :: Row -> Boolean
 isInvalidRow row =
   let
+    fixeds :: Array Value
     fixeds = row >>=
       ( \cell -> case cell of
           Fixed x -> [ x ]

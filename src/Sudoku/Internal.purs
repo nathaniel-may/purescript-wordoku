@@ -22,17 +22,20 @@ import Data.Unfoldable (replicate)
 -- functions and data types for reading and showing sudoku puzzles
 ------------------------------------------------------------------
 
-data CellSet = CellSet Char (Array Char)
+data Value = V1 | V2 | V3 | V4 | V5 | V6 | V7 | V8 | V9
 
-instance cellSetShow :: Show CellSet where
-  show (CellSet empty allValues) = "CellSet " <> show empty <> " " <> show allValues
+derive instance eqValue :: Eq Value
+derive instance ordValue :: Ord Value
 
-data Cell = Fixed Char | Possible (Array Char)
+allValues :: Array Value
+allValues = [ V1, V2, V3, V4, V5, V6, V7, V8, V9 ]
+
+data Cell = Fixed Value | Possible (Array Value)
 
 derive instance cellEq :: Eq Cell
 instance cellShow :: Show Cell where
-  show (Fixed i) = fromCharArray [ i ]
-  show (Possible set) = "."
+  show (Fixed _) = "."
+  show (Possible _) = "."
 
 type Row = Array Cell
 
@@ -53,32 +56,6 @@ instance functorSearchResult :: Functor SearchResult where
   map f (Unique x) = Unique (f x)
   map f (NotUnique x y) = NotUnique (f x) (f y)
 
--- does not use smart constructor
-numbers :: CellSet
-numbers = (CellSet '.' [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ])
-
--- does not use smart constructor
-colors :: CellSet
-colors = (CellSet '.' [ 'R', 'O', 'Y', 'L', 'G', 'B', 'I', 'P', 'V' ])
-
-mkCellSet :: Char -> Array Char -> Either String CellSet
-mkCellSet empty allValues
-  | length allValues /= 9 = Left "char set must have exactly 9 characters"
-  | empty `elem` allValues = Left "the empty character cannot also be in the list of values"
-  | length (unique allValues) /= length allValues = Left "all characters must be unique"
-  | otherwise = Right (CellSet empty allValues)
-
-cellSetFromPuzzle :: String -> Either String CellSet
-cellSetFromPuzzle str = mkCellSet '.' <<< delete '.' $ foldl
-  (\arr c -> if c `elem` arr then arr else cons c arr)
-  []
-  (toCharArray str)
-
-readCell :: CellSet -> Char -> Either String Cell
-readCell (CellSet empty allValues) v =
-  if v == empty then Right $ Possible allValues
-  else if v `elem` allValues then Right (Fixed v)
-  else Left $ "char " <> show v <> "is not one of " <> show allValues
 
 
 ----------------------------------------------

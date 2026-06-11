@@ -2,17 +2,15 @@ module Sudoku.Internal.Generator where
 
 import Prelude
 
-import Data.Array (foldl, index, length, uncons, zip, (..))
+import Data.Array (index, length, uncons, (..))
 import Data.Either (hush)
 import Data.Enum (class Enum)
-import Data.Map (Map)
-import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String.CodeUnits (singleton, toCharArray)
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Sudoku.Internal (Cell(..), CellSet(..), SearchResult(..), Variant(..), diagonalOf, emptySudoku, numbers, randomArray)
-import Sudoku.Internal.Grid (Grid, gridString, readGrid, readNumberGrid, replace2D)
+import Sudoku.Internal (Cell(..), SearchResult(..), Variant(..), allValues, emptySudoku, randomArray)
+import Sudoku.Internal.Grid (Grid, emptyGridWith, gridString, readNumberGrid, replace2D)
+import Sudoku.Internal.Key (sudokuKey)
 import Sudoku.Internal.Solver (solve, solveUnique)
 import Sudoku.Wordlist (wordlist)
 
@@ -62,72 +60,40 @@ instance showDifficulty :: Show Difficulty where
   show Difficult = "Difficult"
   show Challenge = "Challenge"
 
-generate :: Opts -> Effect String
-generate opts = case opts.values of
-  Sudoku -> game opts
-  Colorku -> mapValues (Map.fromFoldable $ numChars `zip` colorChars) <$> game opts
-  Wordoku -> do
-    g <- game opts
-    w <- randomWord unit
-    pure $ mapValues (wordMap w g) g
-  where
-
-  game :: Opts -> Effect String
-  game opts' = generateSudoku opts'.variant opts'.difficulty
-
-  wordMap :: String -> String -> Map Char Char
-  wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
-    where
-    solved = fromMaybe sudoku $ gridString <$> (solve UniqueDiagonal =<< hush (readNumberGrid sudoku))
-
-  -- keys become values
-  mapValues :: Map Char Char -> String -> String
-  mapValues m str = foldl
-    (\s c -> s <> (singleton <<< fromMaybe '.' $ Map.lookup c m))
-    ""
-    (toCharArray str)
-
 generateSudoku :: Variant -> Difficulty -> Effect String
-generateSudoku restrictDiag difficulty = toStringOrLoop =<< do -- may need to generate another puzzle if the difficulty cannot be achieved. Highly unlikely.
-  cellSet <- mixCellSet numbers
-  let mFilled = solve restrictDiag =<< (hush $ readGrid cellSet emptySudoku)
+generateSudoku restrictDiag difficulty = toStringOrLoop =<< do
+  shuffled <- randomArray allValues
+  let emptyGrid = emptyGridWith shuffled
+  let mFilled = solve restrictDiag emptyGrid
   randIdxs <- randomArray (0 .. 80)
-  pure $ (reduceBy cellSet (81 - diffNum restrictDiag difficulty) randIdxs) =<< mFilled
+  pure $ (reduceBy (81 - diffNum restrictDiag difficulty) randIdxs) =<< mFilled
   where
-  reduceBy :: CellSet -> Int -> Array Int -> Grid -> Maybe Grid
-  reduceBy cs count idxs grid =
+  reduceBy :: Int -> Array Int -> Grid -> Maybe Grid
+  reduceBy count idxs grid =
     if (count <= 0) then Just grid
     else do
       { head: idx, tail: rands } <- uncons idxs
-      let nextGrid = removeAt cs idx grid
+      let nextGrid = removeAt idx grid
       case solveUnique restrictDiag nextGrid of
         Unique _ ->
-          case reduceBy cs (count - 1) rands nextGrid of
-            Nothing -> reduceBy cs count rands grid
+          case reduceBy (count - 1) rands nextGrid of
+            Nothing -> reduceBy count rands grid
             Just grid' -> Just grid'
-        _ -> reduceBy cs count rands grid
+        _ -> reduceBy count rands grid
 
-  removeAt :: CellSet -> Int -> Grid -> Grid
-  removeAt (CellSet _ allValues) idx grid =
-    replace2D idx (Possible allValues) grid
+  removeAt :: Int -> Grid -> Grid
+  removeAt idx grid = replace2D idx (Possible allValues) grid
 
   toStringOrLoop :: Maybe Grid -> Effect String
   toStringOrLoop Nothing = generateSudoku restrictDiag difficulty
-  toStringOrLoop (Just grid) = pure $ gridString grid
-
-mixCellSet :: CellSet -> Effect CellSet
-mixCellSet (CellSet empty xs) = map (CellSet empty) (randomArray xs)
+  toStringOrLoop (Just grid) = pure $ gridString sudokuKey grid
 
 numChars :: Array Char
 numChars = [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ]
 
-colorChars :: Array Char
-colorChars = [ 'R', 'O', 'Y', 'L', 'G', 'B', 'I', 'P', 'V' ]
-
 randomWord :: Unit -> Effect String
 randomWord _ =
   fromMaybe "" -- random access won't fail
-
     <<< index wordlist
     <$> randomInt 0 (length wordlist - 1)
 

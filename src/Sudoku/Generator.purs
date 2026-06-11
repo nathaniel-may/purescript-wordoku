@@ -19,6 +19,7 @@ import Effect.Class (liftEffect)
 import Effect.Random (randomInt)
 import Sudoku.Internal (Variant(..), diagonalOf)
 import Sudoku.Internal.Grid (gridString, readNumberGrid)
+import Sudoku.Internal.Key (sudokuKey)
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Wordlist (wordlist)
 import Sudoku.Workers (WorkerPool, raceGenerateSudoku)
@@ -72,7 +73,7 @@ generateWithWorkers pool numWorkers opts = case opts.values of
 wordMap :: String -> String -> Map Char Char
 wordMap word sudoku = Map.fromFoldable $ toCharArray (diagonalOf solved) `zip` toCharArray word
   where
-  solved = fromMaybe sudoku $ gridString <$> (Internal.solve UniqueDiagonal =<< hush (readNumberGrid sudoku))
+  solved = fromMaybe sudoku $ (gridString sudokuKey) <$> (Internal.solve UniqueDiagonal =<< hush (readNumberGrid sudoku))
 
 -- keys become values
 mapValues :: Map Char Char -> String -> String

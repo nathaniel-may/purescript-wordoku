@@ -11,12 +11,12 @@ import Data.String.CodeUnits (toCharArray)
 import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Sudoku (Difficulty(..), Game(..), Variant(..), generate)
-import Sudoku.Encoding (keyToString)
-import Sudoku.Internal.Grid (diagonalOf)
-import Sudoku.Internal.Solver as Internal
-import Sudoku.Internal (SearchResult(..), cellSetFromPuzzle, mkCellSet)
+import Sudoku.Encoding (DecodedKey(..), keyToString)
+import Sudoku.Internal (SearchResult(..), diagonalOf)
 import Sudoku.Internal.Grid (Grid, gridString, readGrid, readNumberGrid)
 import Sudoku.Internal.Generator (diffNum)
+import Sudoku.Internal.Key (Key, mkKey, sudokuKey)
+import Sudoku.Internal.Solver as Internal
 import Sudoku.Wordlist (wordlist)
 import Test.EncodingTests (encodingTests)
 import Test.RegressionTests (regressionTests)
@@ -36,8 +36,12 @@ allProps = sequence
     do
       results <- traverse
         ( \_ -> do
-            { puzzle: str } <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
-            let diag = fromMaybe "" $ (foldl (<>) "" <<< map show <<< diagonalOf) <$> solveWordoku UniqueDiagonal str
+            { puzzle: str, key } <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
+            let mKey = hush $ mkKey (keyToString key)
+            let diag = fromMaybe "" $ do
+                  k <- mKey
+                  grid <- solveWithKey k UniqueDiagonal str
+                  pure $ diagonalOf $ gridString k grid
             pure $ if diag `elem` wordlist then Right unit
                    else Left ("puzzle=" <> str <> " diagonal=" <> diag)
         )
@@ -52,7 +56,7 @@ allProps = sequence
       results <- traverse
         ( \_ -> do
             { puzzle: str } <- generate { difficulty: Beginner, variant: Standard, values: Sudoku }
-            let solvedStr = fromMaybe "" $ gridString <$> solveStr Standard str
+            let solvedStr = fromMaybe "" $ (gridString sudokuKey) <$> solveStr Standard str
             let total81 = 81 == (String.length solvedStr)
             let all9 = all (\x -> x == 9) $ map NonEmptyArray.length (groupAll $ toCharArray solvedStr)
             pure $ total81 && all9
@@ -79,8 +83,6 @@ allProps = sequence
 
   , -- Verifies uniqueness and clue count across multiple difficulties (smoke test)
     do
-      -- Note: Wordoku uniqueness is checked here via checkInvariants,
-      -- and also indirectly via test4 (which uses the same underlying generator logic).
       r1 <- checkInvariants Standard Beginner Sudoku
       r2 <- checkInvariants UniqueDiagonal Tricky Wordoku
       r3 <- checkInvariants Standard Difficult Colorku
@@ -97,14 +99,13 @@ checkInvariants v d g = do
   let expectedClues = diffNum v d
 
   let
-    mCellSet = case mkCellSet '.' (toCharArray (keyToString key)) of
-      Left err -> Left $ "Cell set error: " <> err
-      Right cs -> Right cs
+    mKey :: Either String Key
+    mKey = mkKey (keyToString key)
 
   let
-    uniqueness = case mCellSet of
-      Left err -> Left err
-      Right cs -> case readGrid cs str of
+    uniqueness = case mKey of
+      Left err -> Left $ "Key error: " <> err
+      Right k -> case readGrid k str of
         Left err -> Left $ "Read grid error: " <> err
         Right grid -> case Internal.solveUnique v grid of
           Unique _ -> Right unit
@@ -122,7 +123,5 @@ hushLeft _ = Nothing
 solveStr :: Variant -> String -> Maybe Grid
 solveStr v str = (Internal.solve v) =<< (hush $ readNumberGrid str)
 
-solveWordoku :: Variant -> String -> Maybe Grid
-solveWordoku v str = (Internal.solve v)
-  =<< (hush <<< flip readGrid str)
-  =<< (hush $ cellSetFromPuzzle str)
+solveWithKey :: Key -> Variant -> String -> Maybe Grid
+solveWithKey key v str = (Internal.solve v) =<< (hush $ readGrid key str)
