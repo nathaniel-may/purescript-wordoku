@@ -1,7 +1,7 @@
 module Sudoku.Internal where
 
 import Prelude
-import Data.Array (cons, delete, deleteAt, drop, elem, index, insertAt, length, null, take, uncons, zip, (:), (..))
+import Data.Array (cons, deleteAt, drop, elem, index, insertAt, length, null, take, uncons, zip, (:), (..))
 import Data.Array as Array
 import Effect (Effect)
 import Effect.Random (randomInt)
@@ -11,10 +11,7 @@ import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Foldable (foldl)
-import Data.String (joinWith)
-import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (fromCharArray, singleton, toCharArray)
-import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicate)
 
@@ -52,7 +49,7 @@ instance searchResultShow :: Show a => Show (SearchResult a) where
   show (NotUnique s1 s2) = "(Unique " <> show s1 <> " " <> show s2 <> " " <> ")"
 
 instance functorSearchResult :: Functor SearchResult where
-  map f NoSolution = NoSolution
+  map _ NoSolution = NoSolution
   map f (Unique x) = Unique (f x)
   map f (NotUnique x y) = NotUnique (f x) (f y)
 
@@ -71,9 +68,8 @@ index2D arr i =
 replaceAt :: ∀ a. Int -> (a -> a) -> Array a -> Array a
 replaceAt idx f xs = fromMaybe xs $ do
   x <- index xs idx
-  -- intentional shaddowing to prevent accidental refrence to input
-  xs <- deleteAt idx xs
-  insertAt idx (f x) xs
+  xs' <- deleteAt idx xs
+  insertAt idx (f x) xs'
 
 ----------------------------------------------
 -- functions useful for testing and generation

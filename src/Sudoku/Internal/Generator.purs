@@ -3,12 +3,11 @@ module Sudoku.Internal.Generator where
 import Prelude
 
 import Data.Array (index, length, uncons, (..))
-import Data.Either (hush)
 import Data.Enum (class Enum)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Effect.Random (randomInt)
-import Sudoku.Internal (Cell(..), SearchResult(..), Variant(..), allValues, emptySudoku, randomArray)
+import Sudoku.Internal (Cell(..), SearchResult(..), Variant(..), allValues, randomArray)
 import Sudoku.Internal.Grid (Grid, emptyGridWith, gridString, replace2D)
 import Sudoku.Internal.Key (sudokuKey)
 import Sudoku.Internal.Solver (solve, solveUnique)

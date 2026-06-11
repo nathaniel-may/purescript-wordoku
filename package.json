@@ -18,7 +18,7 @@
   "license": "MIT",
   "scripts": {
     "ps-install": "spago install",
-    "build": "spago build && parcel build index.html && cp _redirects dist/",
+    "build": "rm -rf output && spago build --strict && parcel build index.html && cp _redirects dist/",
     "develop": "spago build && parcel index.html",
     "test": "spago test",
     "bench": "spago build && node bench/main.mjs",
