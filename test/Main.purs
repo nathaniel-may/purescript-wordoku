@@ -12,8 +12,8 @@ import Data.Traversable (sequence, traverse)
 import Effect (Effect)
 import Sudoku (Difficulty(..), Game(..), Variant(..), generate)
 import Sudoku.Encoding (DecodedKey(..), keyToString)
-import Sudoku.Internal (SearchResult(..), diagonalOf)
-import Sudoku.Internal.Grid (Grid, gridString, readGrid, readNumberGrid)
+import Sudoku.Internal (SearchResult(..), diagonalString)
+import Sudoku.Internal.Grid (Grid, gridString, readGrid)
 import Sudoku.Internal.Generator (diffNum)
 import Sudoku.Internal.Key (Key, mkKey, sudokuKey)
 import Sudoku.Internal.Solver as Internal
@@ -42,7 +42,7 @@ allProps = sequence
               diag = fromMaybe "" $ do
                 k <- mKey
                 grid <- solveWithKey k UniqueDiagonal str
-                pure $ diagonalOf $ gridString k grid
+                pure $ diagonalString $ gridString k grid
             pure $
               if diag `elem` wordlist then Right unit
               else Left ("puzzle=" <> str <> " diagonal=" <> diag)
@@ -123,7 +123,7 @@ hushLeft (Left x) = Just x
 hushLeft _ = Nothing
 
 solveStr :: Variant -> String -> Maybe Grid
-solveStr v str = (Internal.solve v) =<< (hush $ readNumberGrid str)
+solveStr v str = (Internal.solve v) =<< (hush $ readGrid sudokuKey str)
 
 solveWithKey :: Key -> Variant -> String -> Maybe Grid
 solveWithKey key v str = (Internal.solve v) =<< (hush $ readGrid key str)

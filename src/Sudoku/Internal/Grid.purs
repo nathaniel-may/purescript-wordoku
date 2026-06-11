@@ -1,7 +1,6 @@
 module Sudoku.Internal.Grid
   ( Grid
   , readGrid
-  , readNumberGrid
   , gridString
   , emptyGridWith
   , extract
@@ -23,11 +22,10 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (joinWith)
 import Data.String.CodePoints as CodePoints
 import Data.String.CodeUnits (singleton, toCharArray)
-import Partial.Unsafe (unsafeCrashWith)
 import Data.Traversable (traverse)
 import Data.Tuple (Tuple(..), snd)
 import Sudoku.Internal (Cell(..), Row, Value, allValues, chunksOf, index2D, replaceAt, transpose) as Internal
-import Sudoku.Internal.Key (Key, fromChar, sudokuKey, toChar) as Key
+import Sudoku.Internal.Key (Key, fromChar, toChar) as Key
 
 newtype Grid = Grid (Array Internal.Row)
 
@@ -44,9 +42,6 @@ readGrid key s =
     | otherwise = case Key.fromChar k c of
         Just v -> Right $ Internal.Fixed v
         Nothing -> Left $ "character " <> show c <> " is not in the key"
-
-readNumberGrid :: String -> Either String Grid
-readNumberGrid = readGrid Key.sudokuKey
 
 gridString :: Key.Key -> Grid -> String
 gridString key (Grid rows) = joinWith "" $ map (joinWith "" <<< map (cellToChar key)) rows

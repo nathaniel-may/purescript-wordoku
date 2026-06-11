@@ -3,26 +3,28 @@ module Test.RegressionTests where
 import Prelude
 
 import Data.Either (hush)
-import Data.Maybe (Maybe, isJust)
+import Data.Maybe (Maybe(..))
 import Sudoku (Variant(..))
-import Sudoku.Internal.Grid (Grid, readGrid)
+import Sudoku.Internal (diagonalString)
+import Sudoku.Internal.Grid (gridString, readGrid)
 import Sudoku.Internal.Key (mkKey)
 import Sudoku.Internal.Solver as Internal
 import Test.QuickCheck (Result, (<?>))
 
 regressionTests :: Array Result
 regressionTests =
-  [ -- solveWordoku returned Nothing for this puzzle due to a bug in cellSetFromPuzzle
-    -- when a character appeared only in dot positions (not as a clue), the key had < 9 chars
+  [ -- 'd' does not appear in any clue position of this puzzle, which previously caused
+    -- cellSetFromPuzzle to produce a Left (only 8 chars found), silently becoming an
+    -- empty grid via fromMaybe []. The diagonal of the solved puzzle must be the key word.
     let
+      word = "signboard"
       puzzle = "snbga......ro.bg......srnb.r..n....bg.i.baonr.b...o..gi.n.....s.o..gsi..agsirn.o."
-      key = hush $ mkKey "adsorbing"
+      key = hush $ mkKey word
+      diag = do
+        k <- key
+        grid <- hush $ readGrid k puzzle
+        solved <- Internal.solve UniqueDiagonal grid
+        pure $ diagonalString $ gridString k solved
     in
-      isJust (solveWordoku key UniqueDiagonal puzzle) <?> "solveWordoku returned Nothing for known puzzle"
+      diag == Just word <?> "solveWordoku diagonal mismatch for known puzzle"
   ]
-
-solveWordoku :: Maybe _ -> Variant -> String -> Maybe Grid
-solveWordoku mKey v str = do
-  key <- mKey
-  grid <- hush $ readGrid key str
-  Internal.solve v grid

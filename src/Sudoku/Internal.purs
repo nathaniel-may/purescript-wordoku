@@ -82,8 +82,8 @@ replaceAt idx f xs = fromMaybe xs $ do
 emptySudoku :: String
 emptySudoku = fromCharArray $ replicate 81 '.'
 
-diagonalOf :: String -> String
-diagonalOf str = foldl onlyDiag "" $ toCharArray str `zip` (0 .. 80)
+diagonalString :: String -> String
+diagonalString str = foldl onlyDiag "" $ toCharArray str `zip` (0 .. 80)
   where
 
   onlyDiag :: String -> Tuple Char Int -> String

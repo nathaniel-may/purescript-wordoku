@@ -35,7 +35,7 @@ mkKey s =
 toChar :: Key -> Value -> Char
 toChar (Key k) v = case Map.lookup v k.toChar of
   Just c -> c
-  Nothing -> '.' -- unreachable: allValues covers all Value constructors
+  Nothing -> unsafeCrashWith "Key.toChar: unreachable — allValues must cover all Value constructors"
 
 fromChar :: Key -> Char -> Maybe Value
 fromChar (Key k) c = Map.lookup c k.fromChar
