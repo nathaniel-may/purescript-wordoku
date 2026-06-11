@@ -63,8 +63,10 @@ extract (Grid rows) = rows
 
 replace2D :: Int -> Internal.Cell -> Grid -> Grid
 replace2D i v (Grid rows) =
-  let (Tuple x y) = Tuple (i `quot` 9) (i `mod` 9)
-  in Grid $ Internal.replaceAt x (Internal.replaceAt y (const v)) rows
+  let
+    (Tuple x y) = Tuple (i `quot` 9) (i `mod` 9)
+  in
+    Grid $ Internal.replaceAt x (Internal.replaceAt y (const v)) rows
 
 traverseRows :: (Internal.Row -> Maybe Internal.Row) -> Grid -> Maybe Grid
 traverseRows f (Grid rows) = Grid <$> traverse f rows

@@ -38,12 +38,14 @@ allProps = sequence
         ( \_ -> do
             { puzzle: str, key } <- generate { difficulty: Beginner, variant: UniqueDiagonal, values: Wordoku }
             let mKey = hush $ mkKey (keyToString key)
-            let diag = fromMaybe "" $ do
-                  k <- mKey
-                  grid <- solveWithKey k UniqueDiagonal str
-                  pure $ diagonalOf $ gridString k grid
-            pure $ if diag `elem` wordlist then Right unit
-                   else Left ("puzzle=" <> str <> " diagonal=" <> diag)
+            let
+              diag = fromMaybe "" $ do
+                k <- mKey
+                grid <- solveWithKey k UniqueDiagonal str
+                pure $ diagonalOf $ gridString k grid
+            pure $
+              if diag `elem` wordlist then Right unit
+              else Left ("puzzle=" <> str <> " diagonal=" <> diag)
         )
         (1 .. 100)
       pure $ case find isLeft results of

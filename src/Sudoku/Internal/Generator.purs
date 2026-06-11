@@ -94,6 +94,7 @@ numChars = [ '1', '2', '3', '4', '5', '6', '7', '8', '9' ]
 randomWord :: Unit -> Effect String
 randomWord _ =
   fromMaybe "" -- random access won't fail
+
     <<< index wordlist
     <$> randomInt 0 (length wordlist - 1)
 

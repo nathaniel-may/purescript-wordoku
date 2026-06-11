@@ -17,7 +17,8 @@ regressionTests =
     let
       puzzle = "snbga......ro.bg......srnb.r..n....bg.i.baonr.b...o..gi.n.....s.o..gsi..agsirn.o."
       key = hush $ mkKey "adsorbing"
-    in isJust (solveWordoku key UniqueDiagonal puzzle) <?> "solveWordoku returned Nothing for known puzzle"
+    in
+      isJust (solveWordoku key UniqueDiagonal puzzle) <?> "solveWordoku returned Nothing for known puzzle"
   ]
 
 solveWordoku :: Maybe _ -> Variant -> String -> Maybe Grid

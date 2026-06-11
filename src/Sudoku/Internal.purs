@@ -56,8 +56,6 @@ instance functorSearchResult :: Functor SearchResult where
   map f (Unique x) = Unique (f x)
   map f (NotUnique x y) = NotUnique (f x) (f y)
 
-
-
 ----------------------------------------------
 -- functions useful for solving and generation
 ----------------------------------------------

@@ -22,18 +22,20 @@ newtype Key = Key { toChar :: Map Value Char, fromChar :: Map Char Value }
 
 mkKey :: String -> Either String Key
 mkKey s =
-  let chars = toCharArray s
-  in if length chars /= 9 then Left "key must be exactly 9 characters"
-     else if length (nub chars) /= 9 then Left "key characters must be unique"
-     else Right $ Key
-       { toChar: Map.fromFoldable (allValues `zip` chars)
-       , fromChar: Map.fromFoldable (chars `zip` allValues)
-       }
+  let
+    chars = toCharArray s
+  in
+    if length chars /= 9 then Left "key must be exactly 9 characters"
+    else if length (nub chars) /= 9 then Left "key characters must be unique"
+    else Right $ Key
+      { toChar: Map.fromFoldable (allValues `zip` chars)
+      , fromChar: Map.fromFoldable (chars `zip` allValues)
+      }
 
 toChar :: Key -> Value -> Char
 toChar (Key k) v = case Map.lookup v k.toChar of
   Just c -> c
-  Nothing -> '.'  -- unreachable: allValues covers all Value constructors
+  Nothing -> '.' -- unreachable: allValues covers all Value constructors
 
 fromChar :: Key -> Char -> Maybe Value
 fromChar (Key k) c = Map.lookup c k.fromChar
