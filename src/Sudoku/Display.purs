@@ -81,12 +81,27 @@ hashSeed :: String -> Int
 hashSeed s = foldl (\acc c -> acc * 31 + fromEnum c) 0 (toCharArray s)
 
 -- | A deterministic integer mix function; exact constants aren't
--- | load-bearing, they just need to be fixed and produce a
--- | reasonably-distributed ordering for typical 9x9 puzzles.
+-- | load-bearing beyond their relative magnitudes, they just need to be
+-- | fixed and produce a reasonably-distributed ordering for typical 9x9
+-- | puzzles. This is a Weyl/golden-ratio multiplicative hash: both
+-- | `-1640531535` (Knuth's multiplicative-hash constant `2654435761`,
+-- | represented as its 32-bit signed two's-complement equivalent so the
+-- | literal stays in the JS-backend `Int` range; numerically identical mod
+-- | 2^32, so it produces the exact same wraparound arithmetic) and
+-- | `618033988` (the golden-ratio fraction of the modulus, `floor(0.618...
+-- | * 1000000007)`) are on the same order of magnitude as the modulus
+-- | `1000000007` itself. That's what makes this scramble rather than ramp:
+-- | incrementing `idx` by 1 jumps the product by a large, non-trivial
+-- | fraction of the modulus each time, so it wraps repeatedly across the
+-- | small range `idx` takes (0-80 for a 9x9 puzzle). A small per-`idx` step
+-- | relative to the modulus (as in earlier, buggy versions of this
+-- | function) never wraps over that range and so stays monotonic in `idx`
+-- | -- merely reversing direction depending on the sign of the seed term,
+-- | which still reveals cells in positional order.
 cellHash :: Int -> Int -> Int
 cellHash seed idx =
   let
-    h = (seed * 1000003 + idx * 9176) `mod` 1000000007
+    h = (seed * (-1640531535) + idx * 618033988) `mod` 1000000007
   in
     if h < 0 then negate h else h
 
