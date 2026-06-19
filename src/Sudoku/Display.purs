@@ -23,7 +23,7 @@ import Sudoku.Internal.Key (mkKey)
 -- | (see solutionButtonDisabled) is the only signal solving isn't done yet.
 solutionButtonLabel :: Boolean -> String
 solutionButtonLabel true = "Clues"
-solutionButtonLabel false = "Show Solution"
+solutionButtonLabel false = "Solution"
 
 -- | Disabled exactly when there is no solution to show yet (covers both
 -- | "still solving" and "solve failed permanently" -- solveError, a separate
