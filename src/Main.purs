@@ -4,14 +4,17 @@ import Prelude
 
 import Data.DateTime (diff)
 import Data.DateTime.Instant (toDateTime)
+import Data.Either (Either(..))
 import Data.Enum (class Enum, succ)
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, maybe)
 import Data.String.CodeUnits (singleton, toCharArray)
 import Data.String.Common (toUpper)
 import Data.Time.Duration (Milliseconds)
 import Effect (Effect)
+import Effect.Aff (try)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Console (log)
+import Effect.Exception (message)
 import Effect.Now (now)
 import Foreign (unsafeToForeign)
 import Halogen as H
@@ -22,10 +25,11 @@ import Halogen.HTML.Properties as HP
 import Halogen.Subscription as HS
 import Halogen.VDom.Driver (runUI)
 import Routing (Route(..), buildPath, parsePath)
-import Sudoku (Difficulty(..), Game(..), Opts, Variant(..), emptySudoku, generateWithWorkers)
-import Sudoku.Encoding (denormalize, normalize)
+import Sudoku (Difficulty(..), Game(..), Grid, Opts, Variant(..), emptySudoku, generateWithWorkers, readGrid, sudokuKey)
+import Sudoku.Display (applySolveResult, displayedPuzzleString, solutionButtonDisabled, solutionButtonLabel)
+import Sudoku.Encoding (DecodedKey, denormalize, keyToString, normalize)
 import Sudoku.Internal (chunksOf)
-import Sudoku.Workers (WorkerPool, initPool, workerCount)
+import Sudoku.Workers (WorkerPool, initPool, solvePuzzle, workerCount)
 import Web.Event.Event (EventType(..))
 import Web.Event.EventTarget (addEventListener, eventListener)
 import Web.HTML (window)
@@ -44,6 +48,11 @@ type State =
   , loading :: Boolean
   , puzzle :: String
   , pool :: Maybe WorkerPool
+  , decodedKey :: Maybe DecodedKey
+  , solution :: Maybe Grid
+  , solveError :: Maybe String
+  , showingSolution :: Boolean
+  , solveRequestId :: Int
   }
 
 data Action
@@ -52,6 +61,9 @@ data Action
   | Generate
   | NextGame Game
   | NextDifficulty Difficulty
+  | RequestSolve Int DecodedKey String
+  | SolveFinished Int (Either String String)
+  | ToggleSolution
 
 component :: ∀ q i o m. MonadAff m => H.Component q i o m
 component =
@@ -71,6 +83,11 @@ initialState _ =
   , loading: false
   , puzzle: emptySudoku
   , pool: Nothing
+  , decodedKey: Nothing
+  , solution: Nothing
+  , solveError: Nothing
+  , showingSolution: false
+  , solveRequestId: 0
   }
 
 fromState :: State -> Opts
@@ -127,6 +144,11 @@ puzzleLabel st = HH.div_ [ HH.label [ HP.id "label" ] [ HH.text (label st.displa
   label Nothing = " "
   label (Just dg) = show dg.d <> " " <> show dg.g
 
+currentPuzzleString :: State -> String
+currentPuzzleString st = case st.decodedKey of
+  Nothing -> st.puzzle
+  Just key -> displayedPuzzleString key st.showingSolution st.puzzle st.solution
+
 render :: ∀ m. State -> H.ComponentHTML Action () m
 render st =
   HH.div
@@ -163,9 +185,34 @@ render st =
             ]
         , HH.div
             [ HP.class_ (H.ClassName "label") ]
-            [ tableFrom (maybe Sudoku _.g st.displayed) st.puzzle
+            [ tableFrom (maybe Sudoku _.g st.displayed) (currentPuzzleString st)
             , puzzleLabel st
             ]
+        , HH.div
+            [ HP.class_ (H.ClassName "VContainer") ]
+            ( ( case st.solveError of
+                  Just err ->
+                    [ HH.div
+                        [ HP.class_ (H.ClassName "SolveError") ]
+                        [ HH.text ("Error solving puzzle: " <> err) ]
+                    ]
+                  Nothing -> []
+              )
+                <>
+                  [ HH.div
+                      [ HP.class_ (H.ClassName "ButtonSlot")
+                      , HP.style if isJust st.displayed then "" else "visibility: hidden"
+                      ]
+                      [ HH.button
+                          [ HP.disabled (solutionButtonDisabled st.solution)
+                          , HP.id "Solution"
+                          , HP.type_ HP.ButtonButton
+                          , HE.onClick (\_ -> ToggleSolution)
+                          ]
+                          [ HH.text (solutionButtonLabel st.showingSolution) ]
+                      ]
+                  ]
+            )
         , HH.div
             [ HP.class_ (H.ClassName "VContainer") ]
             [ HH.footer_
@@ -201,10 +248,42 @@ handleAction = case _ of
   PathChanged path -> do
     let route = parsePath path
     case route of
-      Home -> H.modify_ (_ { puzzle = emptySudoku, displayed = Nothing })
-      GameRoute g -> H.modify_ (_ { selected { g = g }, puzzle = emptySudoku, displayed = Nothing })
-      DifficultyRoute g d -> H.modify_ (_ { selected { g = g, d = d }, puzzle = emptySudoku, displayed = Nothing })
-      PuzzleRoute g d p k -> H.modify_ (_ { selected = { g, d }, displayed = Just { g, d }, puzzle = denormalize k p })
+      Home -> H.modify_
+        ( _
+            { puzzle = emptySudoku
+            , displayed = Nothing
+            , decodedKey = Nothing
+            , solution = Nothing
+            , solveError = Nothing
+            , showingSolution = false
+            }
+        )
+      GameRoute g -> H.modify_
+        ( _
+            { selected { g = g }
+            , puzzle = emptySudoku
+            , displayed = Nothing
+            , decodedKey = Nothing
+            , solution = Nothing
+            , solveError = Nothing
+            , showingSolution = false
+            }
+        )
+      DifficultyRoute g d -> H.modify_
+        ( _
+            { selected { g = g, d = d }
+            , puzzle = emptySudoku
+            , displayed = Nothing
+            , decodedKey = Nothing
+            , solution = Nothing
+            , solveError = Nothing
+            , showingSolution = false
+            }
+        )
+      PuzzleRoute g d p k -> do
+        let displayPuzzle = denormalize k p
+        H.modify_ (_ { selected = { g, d }, displayed = Just { g, d }, puzzle = displayPuzzle })
+        dispatchSolve k displayPuzzle
 
   NextGame g -> H.modify_ (_ { selected { g = cycle Sudoku g } })
   NextDifficulty d -> H.modify_ (_ { selected { d = cycle Beginner d } })
@@ -231,3 +310,66 @@ handleAction = case _ of
           pushState (unsafeToForeign unit) (DocumentTitle "") (URL path) h
           log $ "generated this game " <> show (diff end start :: Milliseconds) <> ":"
           log result.puzzle
+
+        dispatchSolve result.key result.puzzle
+
+  RequestSolve reqId key displayPuzzle -> do
+    st <- H.get
+    case st.pool of
+      Nothing -> H.liftEffect <<< log $ "Pool not initialized! Cannot solve."
+      Just pool -> do
+        let normalizedPuzzle = normalize key displayPuzzle
+        result <- H.liftAff do
+          attempt <- try (solvePuzzle pool (keyToString key) normalizedPuzzle)
+          pure $ case attempt of
+            Right solvedStr -> Right solvedStr
+            Left err -> Left (message err)
+        handleAction (SolveFinished reqId result)
+
+  SolveFinished reqId result -> do
+    st <- H.get
+    let
+      asGrid :: Either String String -> Either String Grid
+      asGrid (Left err) = Left err
+      asGrid (Right s) = readGrid sudokuKey s
+
+      applied = applySolveResult
+        { latestRequestId: st.solveRequestId
+        , currentSolution: st.solution
+        , currentSolveError: st.solveError
+        }
+        reqId
+        (asGrid result)
+
+    when (reqId /= st.solveRequestId) do
+      H.liftEffect <<< log $ "Ignoring stale solve result for request " <> show reqId
+    case applied.solveError of
+      Just err | reqId == st.solveRequestId ->
+        H.liftEffect <<< log $ "BUG: solve failed for a displayed puzzle: " <> err
+      _ -> pure unit
+
+    H.modify_ (_ { solution = applied.solution, solveError = applied.solveError })
+
+  ToggleSolution -> do
+    st <- H.get
+    case st.solution of
+      Nothing -> pure unit -- no-op: nothing to toggle to (button is disabled in this state)
+      Just _ -> H.modify_ (_ { showingSolution = not st.showingSolution })
+
+-- | Resets solve-related state for a newly-displayed puzzle, bumps the
+-- | request id, and dispatches a background solve. Used by both `Generate`'s
+-- | success branch and `PathChanged`'s `PuzzleRoute` branch.
+dispatchSolve :: ∀ o m. MonadAff m => DecodedKey -> String -> H.HalogenM State Action () o m Unit
+dispatchSolve key displayPuzzle = do
+  st <- H.get
+  let reqId = st.solveRequestId + 1
+  H.modify_
+    ( _
+        { decodedKey = Just key
+        , solution = Nothing
+        , solveError = Nothing
+        , showingSolution = false
+        , solveRequestId = reqId
+        }
+    )
+  handleAction (RequestSolve reqId key displayPuzzle)

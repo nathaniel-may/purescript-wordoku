@@ -11,8 +11,10 @@ import Sudoku.Generator
   ) as Exports
 
 import Sudoku.Solver
-  ( SearchResult(..)
+  ( Grid
+  , SearchResult(..)
   , Variant(..)
+  , readGrid
   , solve
   , solveAll
   , solveUnique

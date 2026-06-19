@@ -5,6 +5,7 @@ module Sudoku.Workers
   , workerCount
   , initPool
   , raceGenerateSudoku
+  , solvePuzzle
   , Worker
   ) where
 
@@ -50,6 +51,7 @@ type WorkerPool =
 foreign import workerCountImpl :: Effect Int
 foreign import spawnWorkerImpl :: (String -> Effect Unit) -> Effect (Nullable Worker)
 foreign import postMessageImpl :: Worker -> { id :: Int, variant :: String, difficulty :: String } -> Effect Unit
+foreign import postSolveMessageImpl :: Worker -> { id :: Int, key :: String, puzzle :: String } -> Effect Unit
 foreign import onMessageImpl :: Worker -> ({ id :: Int, result :: String, error :: Nullable String } -> Effect Unit) -> Effect Unit
 foreign import onErrorImpl :: Worker -> (String -> Effect Unit) -> Effect Unit
 foreign import terminateWorkerImpl :: Worker -> Effect Unit
@@ -149,15 +151,12 @@ handleFailure pool rid = do
       else do
         Ref.modify_ (Map.insert rid (req { outstanding = newCount })) pool.pendingRequests
 
--- | Dispatches a generation request to `n` workers in parallel, returning the first successful result.
--- | NOTE: Losing workers are NOT cancelled. They continue computing until they finish or fail,
--- | at which point they return to the idle pool. This temporarily increases CPU usage on multi-core
--- | systems but avoids the overhead of terminating and respawning workers for rapid subsequent requests.
-raceGenerateSudoku :: WorkerPool -> Int -> Variant -> Difficulty -> Aff String
-raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
-  rid <- Ref.modify (_ + 1) pool.requestId
-
-  -- Acquire workers
+-- | Acquires up to `n` idle workers (spawning more if needed, up to `pool.cap`),
+-- | removes them from the idle pool, and registers a pending request for `rid`.
+-- | Returns the workers to dispatch to (possibly fewer than `n`, possibly empty
+-- | if none are available and the pool is at capacity).
+acquireWorkers :: WorkerPool -> Int -> Int -> (Either Error String -> Effect Unit) -> Effect (Array WorkerState)
+acquireWorkers pool rid n cb = do
   available <- Ref.read pool.idleWorkers
   let
     toTake = min n (length available)
@@ -180,14 +179,38 @@ raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
 
   let totalDispatching = dispatching <> newlySpawned
 
-  if length totalDispatching == 0 then
+  if length totalDispatching == 0 then do
     cb (Left $ error "No workers available")
+    pure []
   else do
     Ref.modify_ (Map.insert rid { cb, outstanding: length totalDispatching }) pool.pendingRequests
-    for_ totalDispatching \ws -> do
-      Ref.write (Just rid) ws.jobId
-      postMessageImpl ws.worker { id: rid, variant: variantToString variant, difficulty: show difficulty }
+    pure totalDispatching
 
+-- | Dispatches a generation request to `n` workers in parallel, returning the first successful result.
+-- | NOTE: Losing workers are NOT cancelled. They continue computing until they finish or fail,
+-- | at which point they return to the idle pool. This temporarily increases CPU usage on multi-core
+-- | systems but avoids the overhead of terminating and respawning workers for rapid subsequent requests.
+raceGenerateSudoku :: WorkerPool -> Int -> Variant -> Difficulty -> Aff String
+raceGenerateSudoku pool n variant difficulty = makeAff \cb -> do
+  rid <- Ref.modify (_ + 1) pool.requestId
+  dispatching <- acquireWorkers pool rid n cb
+  for_ dispatching \ws -> do
+    Ref.write (Just rid) ws.jobId
+    postMessageImpl ws.worker { id: rid, variant: variantToString variant, difficulty: show difficulty }
+  pure nonCanceler
+
+-- | Dispatches a single-worker solve request (no racing -- a unique-solution
+-- | puzzle only needs one worker). Acquires exactly one idle worker (spawning
+-- | one if none idle and under cap), posting `{ id, key, puzzle }`.
+-- | `keyStr` is `keyToString decodedKey`; `normalizedPuzzleStr` is the
+-- | 81-character normalized (0-9/'.') puzzle string.
+solvePuzzle :: WorkerPool -> String -> String -> Aff String
+solvePuzzle pool keyStr normalizedPuzzleStr = makeAff \cb -> do
+  rid <- Ref.modify (_ + 1) pool.requestId
+  dispatching <- acquireWorkers pool rid 1 cb
+  for_ dispatching \ws -> do
+    Ref.write (Just rid) ws.jobId
+    postSolveMessageImpl ws.worker { id: rid, key: keyStr, puzzle: normalizedPuzzleStr }
   pure nonCanceler
 
 -- Helpers

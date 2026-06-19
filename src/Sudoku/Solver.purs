@@ -13,6 +13,7 @@ import Data.Either (Either)
 import Data.Maybe (Maybe)
 import Sudoku.Internal (SearchResult(..), Variant(..)) as Exports
 import Sudoku.Internal (Variant, SearchResult)
+import Sudoku.Internal.Grid (Grid, gridString, readGrid) as Exports
 import Sudoku.Internal.Grid (gridString, readGrid)
 import Sudoku.Internal.Key (Key)
 import Sudoku.Internal.Solver as Internal

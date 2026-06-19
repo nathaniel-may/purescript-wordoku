@@ -30,6 +30,9 @@ export const spawnWorkerImpl = (onErr) => () => {
 export const postMessageImpl = (worker) => (msg) => () =>
   worker.postMessage(msg);
 
+export const postSolveMessageImpl = (worker) => (msg) => () =>
+  worker.postMessage(msg);
+
 export const onMessageImpl = (worker) => (handler) => () => {
   worker.onmessage = (e) => handler(e.data)();
 };

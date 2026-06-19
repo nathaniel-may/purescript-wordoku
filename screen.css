@@ -247,3 +247,16 @@ a:hover {
 [color="Violet"] {
   background-color: #6a17a1;
 }
+
+.SolveError {
+  color: red;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.ButtonSlot {
+  /* reserves the button's box even when hidden, to avoid layout jump
+     when a puzzle becomes displayed and the button appears */
+  min-height: 1px;
+}
