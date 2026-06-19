@@ -78,6 +78,10 @@ button {
   border-right: solid 4px;
 }
 
+.ExtraClue {
+  background-color: #f3eec3;
+}
+
 .Circle {
   background-color: white;
   display: block;
