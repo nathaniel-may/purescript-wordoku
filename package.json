@@ -21,6 +21,7 @@
     "build": "rm -rf output && spago build --strict && parcel build index.html && cp _redirects dist/",
     "develop": "spago build && parcel index.html",
     "test": "spago test",
+    "test:full": "spago test --main Test.Full",
     "bench": "spago build && node bench/main.mjs",
     "test:e2e:manual": "node test/e2e/worker_loop.spec.js",
     "format": "purs-tidy format-in-place \"src/**/*.purs\" \"test/**/*.purs\" && prettier --write .",

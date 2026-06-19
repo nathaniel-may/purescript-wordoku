@@ -27,7 +27,10 @@ import Test.StaleSolveTests (staleSolveTests)
 import Test.QuickCheck (Result(..), quickCheck', (<?>))
 
 main :: Effect Unit
-main = do
+main = runFastTests
+
+runFastTests :: Effect Unit
+runFastTests = do
   props <- allProps
   solverResults <- solverCompletenessTests
   void $ traverse (quickCheck' 1) (props <> solverResults) -- Run each Effect property once (the iteration is handled inside)
@@ -69,23 +72,6 @@ allProps = sequence
         )
         (1 .. 10)
       pure $ (all identity results) <?> "Solution validity test (81 cells, 9 of each) failed in one or more iterations"
-
-  , -- Small smoke test for uniqueness and clue count for Standard Challenge which takes a long time to generate
-    do
-      results <- checkInvariants Standard Challenge Sudoku
-      pure $ (not $ isLeft results) <?> ("Standard Challenge: " <> (fromMaybe "" $ hushLeft results))
-
-  , -- Verifies uniqueness and clue count for Standard Difficult which takes far less time to generate than Challenge.
-    do
-      results <- traverse (\_ -> checkInvariants Standard Difficult Sudoku) (1 .. 20)
-      let mFirstFailure = find isLeft results
-      pure $ (null $ filter isLeft results) <?> ("Standard Difficult: " <> (fromMaybe "" $ mFirstFailure >>= hushLeft))
-
-  , -- Small smoke test for uniqueness and clue count for UniqueDiagonal Challenge
-    do
-      results <- traverse (\_ -> checkInvariants UniqueDiagonal Challenge Sudoku) (1 .. 2)
-      let mFirstFailure = find isLeft results
-      pure $ (null $ filter isLeft results) <?> ("UniqueDiagonal Challenge: " <> (fromMaybe "" $ mFirstFailure >>= hushLeft))
 
   , -- Verifies uniqueness and clue count across multiple difficulties (smoke test)
     do
