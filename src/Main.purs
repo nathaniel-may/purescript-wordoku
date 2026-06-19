@@ -25,7 +25,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.Subscription as HS
 import Halogen.VDom.Driver (runUI)
 import Routing (Route(..), buildPath, parsePath)
-import Sudoku (Difficulty(..), Game(..), Grid, Opts, Variant(..), emptySudoku, generateWithWorkers, readGrid, sudokuKey)
+import Sudoku (Difficulty(..), Game(..), Grid, Opts, Variant(..), emptySudoku, generateWithWorkers, mkKey, readGrid)
 import Sudoku.Display (applySolveResult, displayedPuzzleString, solutionButtonDisabled, solutionButtonLabel)
 import Sudoku.Encoding (DecodedKey, denormalize, keyToString, normalize)
 import Sudoku.Internal (chunksOf)
@@ -62,7 +62,7 @@ data Action
   | NextGame Game
   | NextDifficulty Difficulty
   | RequestSolve Int DecodedKey String
-  | SolveFinished Int (Either String String)
+  | SolveFinished Int DecodedKey (Either String String)
   | ToggleSolution
 
 component :: ∀ q i o m. MonadAff m => H.Component q i o m
@@ -318,20 +318,21 @@ handleAction = case _ of
     case st.pool of
       Nothing -> H.liftEffect <<< log $ "Pool not initialized! Cannot solve."
       Just pool -> do
-        let normalizedPuzzle = normalize key displayPuzzle
         result <- H.liftAff do
-          attempt <- try (solvePuzzle pool (keyToString key) normalizedPuzzle)
+          attempt <- try (solvePuzzle pool (keyToString key) displayPuzzle)
           pure $ case attempt of
             Right solvedStr -> Right solvedStr
             Left err -> Left (message err)
-        handleAction (SolveFinished reqId result)
+        handleAction (SolveFinished reqId key result)
 
-  SolveFinished reqId result -> do
+  SolveFinished reqId key result -> do
     st <- H.get
     let
       asGrid :: Either String String -> Either String Grid
       asGrid (Left err) = Left err
-      asGrid (Right s) = readGrid sudokuKey s
+      asGrid (Right s) = do
+        k <- mkKey (keyToString key)
+        readGrid k s
 
       applied = applySolveResult
         { latestRequestId: st.solveRequestId

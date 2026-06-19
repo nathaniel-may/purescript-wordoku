@@ -6,9 +6,9 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Partial.Unsafe (unsafeCrashWith)
 import Sudoku.Display (displayedPuzzleString)
-import Sudoku.Encoding (DecodedKey(..), denormalize)
-import Sudoku.Internal.Grid (Grid, gridString, readGrid)
-import Sudoku.Internal.Key (sudokuKey)
+import Sudoku.Encoding (DecodedKey(..), keyToString)
+import Sudoku.Internal.Grid (Grid, readGrid)
+import Sudoku.Internal.Key (Key, mkKey, sudokuKey)
 import Test.QuickCheck (Result, (<?>))
 
 -- A known 81-character normalized (0-9/'.') *fully solved* grid string,
@@ -28,6 +28,31 @@ fixtureSolvedGrid = case readGrid sudokuKey fixtureSolvedString of
   Right g -> g
   Left err -> unsafeCrashWith ("DisplayTests fixture is broken: " <> err)
 
+-- A Wordoku-keyed (9 distinct lowercase letters) fixture, used to verify
+-- displayedPuzzleString correctly parses/renders the cached Grid using the
+-- puzzle's *own* key rather than assuming a digit-keyed Grid (this is
+-- exactly the bug this regression test guards against).
+wordokuKey :: DecodedKey
+wordokuKey = WordokuKey "countries"
+
+wordokuKeyValue :: Key
+wordokuKeyValue = case mkKey (keyToString wordokuKey) of
+  Right k -> k
+  Left err -> unsafeCrashWith ("DisplayTests wordokuKey fixture is broken: " <> err)
+
+-- This is `fixtureSolvedString` (above) with every digit relabeled to the
+-- corresponding letter of "countries" by position (`1`->`c`, `2`->`o`, ...,
+-- `9`->`s`) -- a uniform value relabeling that preserves the
+-- one-of-each-value-per-row/column/box property, so this is guaranteed to
+-- be a validly solved Wordoku grid given `fixtureSolvedString` is valid.
+wordokuSolvedString :: String
+wordokuSolvedString = "ncteiusroeurcosnitsiotrnceucensutioriruneotcstosicreunrtiuneoscuneoscrtioscrtiune"
+
+wordokuSolvedGrid :: Grid
+wordokuSolvedGrid = case readGrid wordokuKeyValue wordokuSolvedString of
+  Right g -> g
+  Left err -> unsafeCrashWith ("DisplayTests wordokuSolvedGrid fixture is broken: " <> err)
+
 displayTests :: Array Result
 displayTests =
   [ (displayedPuzzleString SudokuKey false puzzleString Nothing == puzzleString)
@@ -37,16 +62,11 @@ displayTests =
       <?> "displayedPuzzleString: showing clues always returns the puzzle, even once a solution exists"
 
   , (displayedPuzzleString SudokuKey true puzzleString (Just fixtureSolvedGrid) == fixtureSolvedString)
-      <?> "displayedPuzzleString: showing solution should denormalize the cached grid via gridString+denormalize"
+      <?> "displayedPuzzleString: showing solution should render the cached grid via gridString with the puzzle's own key"
 
   , (displayedPuzzleString SudokuKey true puzzleString Nothing == puzzleString)
       <?> "displayedPuzzleString: showing solution with no solution yet (in-flight or failed) falls back to the puzzle"
 
-  , let
-      key = WordokuKey "countries"
-    in
-      ( displayedPuzzleString key true "anything" (Just fixtureSolvedGrid)
-          == denormalize key (gridString sudokuKey fixtureSolvedGrid)
-      )
-        <?> "displayedPuzzleString: composition with a non-Sudoku key denormalizes correctly"
+  , (displayedPuzzleString wordokuKey true "anything" (Just wordokuSolvedGrid) == wordokuSolvedString)
+      <?> "displayedPuzzleString: a non-digit (Wordoku) key parses/renders the cached grid using that same key, not sudokuKey"
   ]

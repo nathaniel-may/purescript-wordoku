@@ -14,9 +14,9 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), isNothing)
-import Sudoku.Encoding (DecodedKey, denormalize)
+import Sudoku.Encoding (DecodedKey, keyToString)
 import Sudoku.Internal.Grid (Grid, gridString)
-import Sudoku.Internal.Key (sudokuKey)
+import Sudoku.Internal.Key (mkKey)
 
 -- | Label always reflects what clicking the button would switch *to* --
 -- | not solve progress. There is no separate "Solving..." label; disabling
@@ -32,15 +32,18 @@ solutionButtonDisabled :: Maybe Grid -> Boolean
 solutionButtonDisabled = isNothing
 
 -- | Selects which puzzle string to render: the original puzzle (clues) or
--- | the solved grid denormalized into the puzzle's display alphabet.
--- | `key` is the puzzle's own DecodedKey (used only for the denormalize
--- | step); the Grid itself is always parsed in the fixed canonical digit
--- | alphabet (`sudokuKey`), regardless of `key`, because that's the
--- | alphabet every worker solve response is encoded in.
+-- | the solved grid rendered in the puzzle's own display alphabet.
+-- | `key` is the puzzle's own DecodedKey; the cached `Grid` is always keyed
+-- | by that same key (it's the alphabet every worker solve response is
+-- | encoded/parsed in), so rendering it back out just needs `gridString`
+-- | with that key directly -- no denormalize step is involved (denormalize
+-- | is solely for the unrelated URL-encoding alphabet).
 displayedPuzzleString :: DecodedKey -> Boolean -> String -> Maybe Grid -> String
 displayedPuzzleString _ false puzzle _ = puzzle
 displayedPuzzleString _ true puzzle Nothing = puzzle
-displayedPuzzleString key true _ (Just grid) = denormalize key (gridString sudokuKey grid)
+displayedPuzzleString key true puzzle (Just grid) = case mkKey (keyToString key) of
+  Left _ -> puzzle
+  Right k -> gridString k grid
 
 -- | Pure decision for the stale/duplicate solve dispatch guard (see design
 -- | doc section 5). Applies an incoming solve result to `solution`/
