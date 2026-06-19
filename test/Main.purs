@@ -18,16 +18,20 @@ import Sudoku.Internal.Generator (diffNum)
 import Sudoku.Internal.Key (Key, mkKey, sudokuKey)
 import Sudoku.Internal.Solver as Internal
 import Sudoku.Wordlist (wordlist)
+import Test.DisplayTests (displayTests)
 import Test.EncodingTests (encodingTests)
 import Test.RegressionTests (regressionTests)
 import Test.RoutingTests (routingTests)
+import Test.SolverTests (solverCompletenessTests)
+import Test.StaleSolveTests (staleSolveTests)
 import Test.QuickCheck (Result(..), quickCheck', (<?>))
 
 main :: Effect Unit
 main = do
   props <- allProps
-  void $ traverse (quickCheck' 1) props -- Run each Effect property once (the iteration is handled inside)
-  let unitTests = encodingTests <> routingTests <> regressionTests
+  solverResults <- solverCompletenessTests
+  void $ traverse (quickCheck' 1) (props <> solverResults) -- Run each Effect property once (the iteration is handled inside)
+  let unitTests = encodingTests <> routingTests <> regressionTests <> displayTests <> staleSolveTests
   void $ traverse (quickCheck' 1) unitTests
 
 allProps :: Effect (Array Result)
