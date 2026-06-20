@@ -324,6 +324,8 @@ handleAction = case _ of
               , puzzle = displayPuzzle
               , clueCount = clampedClueCount
               , showingSolution = false
+              , solution = Nothing
+              , solveError = Nothing
               }
           )
         dispatchSolve k displayPuzzle
@@ -342,7 +344,17 @@ handleAction = case _ of
         result <- H.liftAff $ generateWithWorkers pool n (fromState st)
         end <- H.liftEffect $ map toDateTime now
         let { g, d } = st.selected
-        H.modify_ (_ { displayed = Just { g, d }, loading = false, puzzle = result.puzzle, clueCount = 0, showingSolution = false })
+        H.modify_
+          ( _
+              { displayed = Just { g, d }
+              , loading = false
+              , puzzle = result.puzzle
+              , clueCount = 0
+              , showingSolution = false
+              , solution = Nothing
+              , solveError = Nothing
+              }
+          )
 
         let
           normalizedPuzzle = normalize result.key result.puzzle
