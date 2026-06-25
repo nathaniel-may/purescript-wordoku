@@ -33,8 +33,8 @@ routingTests =
       k = WordokuKey "countries"
       p = "c.o.u.n.t.r.i.e.s................................................................"
       norm = normalize k p
-      path = buildPath g d norm k 0
-      expected = PuzzleRoute g d norm k 0
+      path = buildPath g d norm k
+      expected = PuzzleRoute g d norm k
     in
       (parsePath path == expected) <?> "Routing round-trip failed"
 
@@ -44,10 +44,8 @@ routingTests =
       k = WordokuKey "countries"
       p = "c.o.u.n.t.r.i.e.s................................................................"
       norm = normalize k p
-      path = buildPath g d norm k 3
-      expected = PuzzleRoute g d norm k 3
     in
-      (parsePath path == expected) <?> "Routing round-trip with non-zero clue count failed"
+      (buildPath g d norm k == "/wordoku/tricky/" <> encodePuzzle norm k) <?> "buildPath omits any trailing segment"
 
   , let
       g = Wordoku
@@ -55,30 +53,10 @@ routingTests =
       k = WordokuKey "countries"
       p = "c.o.u.n.t.r.i.e.s................................................................"
       norm = normalize k p
+      path = "/wordoku/tricky/" <> encodePuzzle norm k <> "/2"
+      expected = PuzzleRoute g d norm k
     in
-      (buildPath g d norm k 0 == "/wordoku/tricky/" <> encodePuzzle norm k) <?> "buildPath with 0 clue count omits trailing segment"
-
-  , let
-      g = Wordoku
-      d = Tricky
-      k = WordokuKey "countries"
-      p = "c.o.u.n.t.r.i.e.s................................................................"
-      norm = normalize k p
-      path = "/wordoku/tricky/" <> encodePuzzle norm k <> "/notanumber"
-      expected = PuzzleRoute g d norm k 0
-    in
-      (parsePath path == expected) <?> "parsePath malformed clue count segment clamps to 0"
-
-  , let
-      g = Wordoku
-      d = Tricky
-      k = WordokuKey "countries"
-      p = "c.o.u.n.t.r.i.e.s................................................................"
-      norm = normalize k p
-      path = "/wordoku/tricky/" <> encodePuzzle norm k <> "/-3"
-      expected = PuzzleRoute g d norm k 0
-    in
-      (parsePath path == expected) <?> "parsePath negative clue count segment clamps to 0"
+      (parsePath path == expected) <?> "parsePath ignores a stale trailing clue-count segment"
 
   , let
       p = repeat 81 '0'

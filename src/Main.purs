@@ -312,17 +312,15 @@ handleAction = case _ of
             , clueCount = 0
             }
         )
-      PuzzleRoute g d p k n -> do
+      PuzzleRoute g d p k -> do
         let
           displayPuzzle = denormalize k p
-          blankCount = Array.length (Array.filter (_ == '.') (toCharArray displayPuzzle))
-          clampedClueCount = max 0 (min n blankCount)
         H.modify_
           ( _
               { selected = { g, d }
               , displayed = Just { g, d }
               , puzzle = displayPuzzle
-              , clueCount = clampedClueCount
+              , clueCount = 0
               , showingSolution = false
               , solution = Nothing
               , solveError = Nothing
@@ -358,7 +356,7 @@ handleAction = case _ of
 
         let
           normalizedPuzzle = normalize result.key result.puzzle
-          path = buildPath g d normalizedPuzzle result.key 0
+          path = buildPath g d normalizedPuzzle result.key
 
         H.liftEffect do
           h <- history =<< window
@@ -416,17 +414,11 @@ handleAction = case _ of
     st <- H.get
     case st.decodedKey of
       Nothing -> pure unit -- no-op: nothing to reveal a clue for
-      Just key -> do
+      Just _ -> do
         let
           blankCount = Array.length (Array.filter (_ == '.') (toCharArray st.puzzle))
           newCount = min (st.clueCount + 1) blankCount
         H.modify_ (_ { clueCount = newCount })
-        let
-          normalizedPuzzle = normalize key st.puzzle
-          path = buildPath st.selected.g st.selected.d normalizedPuzzle key newCount
-        H.liftEffect do
-          h <- history =<< window
-          pushState (unsafeToForeign unit) (DocumentTitle "") (URL path) h
 
 -- | Resets solve-related state for a newly-displayed puzzle, bumps the
 -- | request id, and dispatches a background solve. Used by both `Generate`'s
