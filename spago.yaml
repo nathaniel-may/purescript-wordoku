@@ -33,3 +33,4 @@ package:
     dependencies:
       - psci-support
       - quickcheck
+      - halogen-vdom-string-renderer

@@ -8,12 +8,19 @@ module Sudoku.Display
   , solutionButtonDisabled
   , displayedPuzzleString
   , applySolveResult
+  , clueOrder
+  , applyClues
+  , addClueButtonDisabled
   ) where
 
 import Prelude
 
+import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), isNothing)
+import Data.Enum (fromEnum)
+import Data.Foldable (foldl)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Sudoku.Encoding (DecodedKey, keyToString)
 import Sudoku.Internal.Grid (Grid, gridString)
 import Sudoku.Internal.Key (mkKey)
@@ -65,3 +72,74 @@ applySolveResult st incomingId result
         Left err -> { solution: Nothing, solveError: Just err }
   | otherwise =
       { solution: st.currentSolution, solveError: st.currentSolveError }
+
+-- | Folds the puzzle string into a single `Int` seed using each `Char`'s
+-- | code point. `Int` is 32-bit signed and wraps on overflow in PureScript;
+-- | no special overflow handling is needed since only relative ordering of
+-- | hashes matters within one puzzle.
+hashSeed :: String -> Int
+hashSeed s = foldl (\acc c -> acc * 31 + fromEnum c) 0 (toCharArray s)
+
+-- | A deterministic multiplicative hash: `seed` and `idx` are each
+-- | multiplied by a constant derived from the golden ratio (`-1640531535`
+-- | and `618033988`, both on the same order of magnitude as the modulus
+-- | `1000000007`), so incrementing `idx` by 1 jumps the product by a large
+-- | fraction of the modulus and wraps repeatedly -- producing a
+-- | well-scrambled rather than ramping ordering. `-1640531535` is negative
+-- | only because it's the 32-bit signed two's-complement encoding of its
+-- | unsigned value (`2654435761`, near Knuth's multiplicative-hash
+-- | constant `floor(2^32 / φ)`): that value exceeds `Int`'s positive range
+-- | (`2^31 - 1`), so it wraps to a negative literal -- it has nothing to do
+-- | with the golden ratio itself. `mod`'s result is already non-negative
+-- | here since PureScript's `mod` takes the sign of its (positive)
+-- | divisor. Exact constants aren't load-bearing beyond their magnitude.
+cellHash :: Int -> Int -> Int
+cellHash seed idx =
+  (seed * (-1640531535) + idx * 618033988) `mod` 1000000007
+
+-- | A deterministic ordering over a puzzle's blank cell indices, used to
+-- | decide which cell gets revealed first/second/etc when the user clicks
+-- | "+1 Clue" repeatedly. Re-derives the `'.'` check directly from the
+-- | input string's characters (the *denormalized display* string), so it
+-- | has no dependency on `Sudoku.Encoding.denormalize`.
+clueOrder :: String -> Array Int
+clueOrder puzzle =
+  let
+    chars = toCharArray puzzle
+    blanks = Array.filter (\i -> Array.index chars i == Just '.') (Array.range 0 (Array.length chars - 1))
+    seed = hashSeed puzzle
+  in
+    Array.sortBy (comparing (cellHash seed)) blanks
+
+-- | Reveals the first `n` blanks (per `clueOrder`) of `puzzle` using the
+-- | corresponding characters from the solved `Grid`. `n` is clamped to
+-- | `[0, blankCount]` -- this is the single clamp point used both by the UI
+-- | (button disable) and the URL parser fallback path (out-of-range high
+-- | values from `Routing.purs`). Mirrors `displayedPuzzleString`'s fallback
+-- | pattern: returns `puzzle` unchanged if `key` doesn't construct.
+applyClues :: DecodedKey -> Int -> String -> Grid -> String
+applyClues key n puzzle grid = case mkKey (keyToString key) of
+  Left _ -> puzzle
+  Right k ->
+    let
+      order = clueOrder puzzle
+      blankCount = Array.length order
+      clamped = max 0 (min n blankCount)
+      idxsToReveal = Array.take clamped order
+      solvedStr = gridString k grid
+      puzzleChars = toCharArray puzzle
+      solvedChars = toCharArray solvedStr
+
+      reveal :: Array Char -> Int -> Array Char
+      reveal cs i = case Array.index solvedChars i of
+        Just c -> fromMaybe cs (Array.updateAt i c cs)
+        Nothing -> cs
+    in
+      fromCharArray (foldl reveal puzzleChars idxsToReveal)
+
+-- | Disabled when there's no solution cached yet, or when every blank in
+-- | the original puzzle string has already been revealed as an extra clue.
+addClueButtonDisabled :: Maybe Grid -> Int -> String -> Boolean
+addClueButtonDisabled Nothing _ _ = true
+addClueButtonDisabled (Just _) clueCount puzzle =
+  clueCount >= Array.length (Array.filter (_ == '.') (toCharArray puzzle))

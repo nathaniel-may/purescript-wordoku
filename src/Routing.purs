@@ -2,7 +2,7 @@ module Routing where
 
 import Prelude
 
-import Data.Array (filter)
+import Data.Array (filter, take)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), split, toLower)
 import Sudoku.Encoding (DecodedKey, decodePuzzle, encodePuzzle)
@@ -56,15 +56,17 @@ parsePath path =
               Just d -> DifficultyRoute g d
               Nothing -> GameRoute g
           Nothing -> Home
-      [ gStr, dStr, pStr ] ->
-        case parseGame gStr, parseDifficulty dStr of
-          Just g, Just d ->
-            case decodePuzzle g pStr of
-              Just { puzzle, key } -> PuzzleRoute g d puzzle key
-              _ -> DifficultyRoute g d
-          Just g, Nothing -> GameRoute g
-          _, _ -> Home
-      _ -> Home
+      _ -> case take 3 segments of
+        [ gStr, dStr, pStr ] ->
+          case parseGame gStr, parseDifficulty dStr of
+            Just g, Just d ->
+              case decodePuzzle g pStr of
+                Just { puzzle, key } -> PuzzleRoute g d puzzle key
+                _ -> DifficultyRoute g d
+            Just g, Nothing -> GameRoute g
+            _, _ -> Home
+        _ -> Home
 
 buildPath :: Game -> Difficulty -> String -> DecodedKey -> String
-buildPath g d p k = "/" <> toLower (show g) <> "/" <> toLower (show d) <> "/" <> encodePuzzle p k
+buildPath g d p k =
+  "/" <> toLower (show g) <> "/" <> toLower (show d) <> "/" <> encodePuzzle p k

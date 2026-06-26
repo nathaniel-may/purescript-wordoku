@@ -6,7 +6,7 @@ import Data.Array ((..))
 import Data.Foldable (foldr)
 import Data.String.CodeUnits (singleton)
 import Routing (Route(..), buildPath, parsePath)
-import Sudoku.Encoding (DecodedKey(..), normalize)
+import Sudoku.Encoding (DecodedKey(..), encodePuzzle, normalize)
 import Sudoku.Internal.Generator (Difficulty(..), Game(..))
 import Test.QuickCheck (Result, (<?>))
 
@@ -37,4 +37,31 @@ routingTests =
       expected = PuzzleRoute g d norm k
     in
       (parsePath path == expected) <?> "Routing round-trip failed"
+
+  , let
+      g = Wordoku
+      d = Tricky
+      k = WordokuKey "countries"
+      p = "c.o.u.n.t.r.i.e.s................................................................"
+      norm = normalize k p
+    in
+      (buildPath g d norm k == "/wordoku/tricky/" <> encodePuzzle norm k) <?> "buildPath omits any trailing segment"
+
+  , let
+      g = Wordoku
+      d = Tricky
+      k = WordokuKey "countries"
+      p = "c.o.u.n.t.r.i.e.s................................................................"
+      norm = normalize k p
+      path = "/wordoku/tricky/" <> encodePuzzle norm k <> "/2"
+      expected = PuzzleRoute g d norm k
+    in
+      (parsePath path == expected) <?> "parsePath ignores a stale trailing clue-count segment"
+
+  , let
+      p = repeat 81 '0'
+      badKey = "ROYLGBIPV" -- Colorku key for a Sudoku game
+      repeat n c = foldr (\_ s -> s <> singleton c) "" (1 .. n)
+    in
+      (parsePath ("/sudoku/tricky/" <> p <> badKey <> "/2") == DifficultyRoute Sudoku Tricky) <?> "parsePath key/game mismatch with 4 segments failed"
   ]
