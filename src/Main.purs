@@ -111,18 +111,18 @@ tableFrom game original displayed = case game of
   Wordoku -> mkTable <<< rows $ Array.zip (toCharArray original) (toCharArray (toUpper displayed))
   Sudoku -> mkTable <<< rows $ Array.zip (toCharArray original) (toCharArray displayed)
   where
-  td' :: Boolean -> Array (HH.HTML w i) -> HH.HTML w i
-  td' isExtraClue =
-    HH.div [ HP.classes ([ H.ClassName "td" ] <> if isExtraClue then [ H.ClassName "ExtraClue" ] else []) ]
+  td' :: String -> Boolean -> Array (HH.HTML w i) -> HH.HTML w i
+  td' extraClueClass isExtraClue =
+    HH.div [ HP.classes ([ H.ClassName "td" ] <> if isExtraClue then [ H.ClassName extraClueClass ] else []) ]
 
   isExtra :: Char -> Char -> Boolean
   isExtra origChar dispChar = origChar == '.' && dispChar /= '.'
 
   rows :: Array (Tuple Char Char) -> Array (Array (HH.HTML w i))
-  rows pairs = chunksOf 9 $ (\(Tuple o d) -> td' (isExtra o d) [ HH.text (displayChar d) ]) <$> pairs
+  rows pairs = chunksOf 9 $ (\(Tuple o d) -> td' "ExtraClue" (isExtra o d) [ HH.text (displayChar d) ]) <$> pairs
 
   colorkuRows :: Array (Tuple Char Char) -> Array (Array (HH.HTML w i))
-  colorkuRows pairs = chunksOf 9 $ (\(Tuple o d) -> td' (isExtra o d) [ circle d ]) <$> pairs
+  colorkuRows pairs = chunksOf 9 $ (\(Tuple o d) -> td' "ExtraClueDot" (isExtra o d) [ circle d ]) <$> pairs
 
   circle :: Char -> HH.HTML w i
   circle 'R' = circle' "Red"
