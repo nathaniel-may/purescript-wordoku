@@ -6,7 +6,6 @@ import Data.Array as Array
 import Data.Newtype (unwrap)
 import Data.String (Pattern(..), contains)
 import Data.String.CodeUnits (fromCharArray)
-import Data.Void (absurd)
 import Halogen.HTML (HTML)
 import Halogen.VDom.DOM.StringRenderer (render) as StringRenderer
 import Main (tableFrom)
