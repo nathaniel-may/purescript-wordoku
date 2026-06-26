@@ -21,6 +21,7 @@ import Sudoku.Wordlist (wordlist)
 import Test.DisplayTests (displayTests)
 import Test.EncodingTests (encodingTests)
 import Test.RegressionTests (regressionTests)
+import Test.RenderTests (renderTests)
 import Test.RoutingTests (routingTests)
 import Test.SolverTests (solverCompletenessTests)
 import Test.StaleSolveTests (staleSolveTests)
@@ -34,7 +35,7 @@ runFastTests = do
   props <- allProps
   solverResults <- solverCompletenessTests
   void $ traverse (quickCheck' 1) (props <> solverResults) -- Run each Effect property once (the iteration is handled inside)
-  let unitTests = encodingTests <> routingTests <> regressionTests <> displayTests <> staleSolveTests
+  let unitTests = encodingTests <> routingTests <> regressionTests <> displayTests <> staleSolveTests <> renderTests
   void $ traverse (quickCheck' 1) unitTests
 
 allProps :: Effect (Array Result)

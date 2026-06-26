@@ -32,6 +32,7 @@
         },
         "test": {
           "dependencies": [
+            "halogen-vdom-string-renderer",
             "psci-support",
             "quickcheck"
           ]
@@ -917,6 +918,22 @@
         "unsafe-coerce",
         "web-dom",
         "web-events"
+      ]
+    },
+    "halogen-vdom-string-renderer": {
+      "type": "registry",
+      "version": "0.5.0",
+      "integrity": "sha256-C1IWOLKDc3nriNd2rnZbXLe5o/5NQxaIucUQHY7tmbY=",
+      "dependencies": [
+        "arrays",
+        "foreign",
+        "halogen-vdom",
+        "maybe",
+        "ordered-collections",
+        "prelude",
+        "strings",
+        "tuples",
+        "unsafe-coerce"
       ]
     },
     "identity": {
