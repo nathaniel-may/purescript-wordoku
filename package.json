@@ -25,7 +25,8 @@
     "bench": "spago build && node bench/main.mjs",
     "test:e2e:manual": "node test/e2e/worker_loop.spec.js",
     "format": "purs-tidy format-in-place \"src/**/*.purs\" \"test/**/*.purs\" && prettier --write .",
-    "format:check": "purs-tidy check \"src/**/*.purs\" \"test/**/*.purs\" && prettier --check ."
+    "format:check": "purs-tidy check \"src/**/*.purs\" \"test/**/*.purs\" && prettier --check .",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@parcel/packager-raw-url": "^2.16.4",
     "@parcel/transformer-webmanifest": "^2.16.4",
+    "husky": "^9.1.7",
     "prettier": "^3.8.4",
     "puppeteer": "^25.1.0",
     "purs-tidy": "^0.11.1",
