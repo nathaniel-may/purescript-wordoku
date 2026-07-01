@@ -23,7 +23,7 @@ import Test.EncodingTests (encodingTests)
 import Test.RegressionTests (regressionTests)
 import Test.RenderTests (renderTests)
 import Test.RoutingTests (routingTests)
-import Test.SolverTests (solverCompletenessTests)
+import Test.SolverTests (solverCompletenessTests, solverUniquenessTests)
 import Test.StaleSolveTests (staleSolveTests)
 import Test.QuickCheck (Result(..), quickCheck', (<?>))
 
@@ -35,7 +35,7 @@ runFastTests = do
   props <- allProps
   solverResults <- solverCompletenessTests
   void $ traverse (quickCheck' 1) (props <> solverResults) -- Run each Effect property once (the iteration is handled inside)
-  let unitTests = encodingTests <> routingTests <> regressionTests <> displayTests <> staleSolveTests <> renderTests
+  let unitTests = encodingTests <> routingTests <> regressionTests <> displayTests <> staleSolveTests <> renderTests <> solverUniquenessTests
   void $ traverse (quickCheck' 1) unitTests
 
 allProps :: Effect (Array Result)
